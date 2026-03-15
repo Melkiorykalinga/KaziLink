@@ -1,0 +1,32 @@
+.rating-stars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.star {
+  flex-shrink: 0;
+}
+
+.star.filled {
+  color: var(--accent-amber);
+  fill: var(--accent-amber);
+}
+
+.star.half {
+  color: var(--accent-amber);
+  fill: var(--accent-amber);
+  opacity: 0.5;
+}
+
+.star.empty {
+  color: var(--text-muted);
+  fill: none;
+}
+
+.rating-value {
+  margin-left: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}

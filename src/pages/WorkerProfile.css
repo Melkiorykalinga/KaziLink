@@ -1,0 +1,43 @@
+.profile-layout { display: grid; grid-template-columns: 1fr 320px; gap: var(--space-xl); align-items: start; }
+.profile-main { display: flex; flex-direction: column; gap: var(--space-lg); }
+
+.profile-hero { padding: 0; overflow: hidden; }
+.profile-banner { height: 120px; background: var(--gradient-primary); }
+.profile-hero-content { display: flex; align-items: flex-end; gap: var(--space-lg); padding: 0 var(--space-lg) var(--space-lg); margin-top: -40px; }
+.profile-avatar-lg { font-size: 4rem; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; background: var(--bg-primary); border: 3px solid var(--border-color); border-radius: 50%; flex-shrink: 0; }
+.profile-name { font-size: 1.5rem; font-weight: 800; }
+.profile-title { color: var(--text-secondary); font-size: 0.95rem; }
+.profile-hero-meta { display: flex; flex-wrap: wrap; gap: var(--space-md); margin-top: var(--space-sm); color: var(--text-muted); font-size: 0.85rem; }
+.profile-hero-meta span { display: flex; align-items: center; gap: 4px; }
+.review-count { color: var(--text-muted); font-size: 0.82rem; }
+
+.profile-section h2 { font-size: 1.15rem; margin-bottom: var(--space-md); }
+.profile-bio { color: var(--text-secondary); line-height: 1.8; font-size: 0.95rem; }
+.profile-skills { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+
+.experience-timeline { display: flex; flex-direction: column; gap: var(--space-lg); padding-left: var(--space-lg); border-left: 2px solid var(--border-color); }
+.exp-item { position: relative; }
+.exp-dot { position: absolute; left: calc(-1 * var(--space-lg) - 5px); top: 4px; width: 10px; height: 10px; background: var(--accent-blue); border-radius: 50%; }
+.exp-content h4 { font-size: 1rem; font-weight: 700; }
+.exp-company { color: var(--text-secondary); font-size: 0.88rem; }
+.exp-duration { color: var(--text-muted); font-size: 0.82rem; margin-top: 2px; }
+
+.profile-achievements { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+.achievement-card { display: flex; align-items: center; gap: var(--space-sm); padding: 0.5rem 1rem; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: var(--radius-md); font-size: 0.88rem; font-weight: 600; color: var(--accent-violet); }
+
+.profile-reviews { display: flex; flex-direction: column; gap: var(--space-md); }
+.no-reviews { color: var(--text-muted); text-align: center; padding: var(--space-xl); }
+
+/* Sidebar */
+.profile-sidebar { display: flex; flex-direction: column; gap: var(--space-lg); position: sticky; top: calc(var(--navbar-height) + var(--space-xl)); }
+.hire-card { display: flex; flex-direction: column; align-items: center; gap: var(--space-md); text-align: center; }
+.hire-rate { display: flex; align-items: baseline; color: var(--accent-emerald); }
+.rate-value { font-size: 2rem; font-weight: 800; font-family: var(--font-display); }
+.rate-unit { font-size: 1rem; color: var(--text-muted); }
+
+.stats-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-sm); text-align: center; }
+.ps-stat-value { display: block; font-size: 1.3rem; font-weight: 800; font-family: var(--font-display); color: var(--text-primary); }
+.ps-stat-label { font-size: 0.72rem; color: var(--text-muted); }
+
+@media (max-width: 1024px) { .profile-layout { grid-template-columns: 1fr; } .profile-sidebar { position: static; } }
+@media (max-width: 768px) { .profile-hero-content { flex-direction: column; align-items: flex-start; } }
