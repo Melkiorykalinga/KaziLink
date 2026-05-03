@@ -1,0 +1,23 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kazilink-db
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: kazilink
+      POSTGRES_PASSWORD: kazilink_secret
+      POSTGRES_DB: kazilink
+    volumes:
+      - kazilink_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kazilink -d kazilink"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  kazilink_pgdata:

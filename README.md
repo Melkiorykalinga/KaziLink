@@ -1,16 +1,60 @@
-# React + Vite
+# KaziLink - The Ultimate Short-term Gig Economy Platform
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Think "Uber for Jobs": an employer posts a task, nearby workers apply instantly, the employer picks the best match, and the platform manages the transaction securely.
 
-Currently, two official plugins are available:
+## 🚀 Technology Stack
+- **Frontend**: Mobile-first React, Tailwind CSS, Vite.
+- **Backend**: Node.js, Express, strict JWT Authentication.
+- **Database**: PostgreSQL connected via Prisma ORM v5.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 📦 Setup Instructions
 
-## React Compiler
+### 1. Prerequisites
+- Node.js (v18 or higher recommended)
+- PostgreSQL Database running locally or via Docker
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 2. Database & Backend Configuration
+1. Navigate to the `server/` directory:
+   ```bash
+   cd server
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Set up the environment variables:
+   Rename `.env.example` to `.env` and provide your actual `DATABASE_URL` and `JWT_SECRET`.
+4. Migrate the database schema:
+   ```bash
+   npx prisma migrate dev --name init
+   ```
+5. Seed the default Admin user (Password: *admin123*, Email: *admin@kazilink.com*):
+   ```bash
+   npm run seed
+   ```
+6. Start the Express API Server:
+   ```bash
+   npm run dev
+   ```
+   *The API runs at `http://localhost:5000` focusing strongly on rate-limits, helmet security, CORS and IDOR protection middleware.*
 
-## Expanding the ESLint configuration
+### 3. Frontend Configuration
+1. In a separate terminal, navigate to the `scratch/` (Frontend) directory:
+   ```bash
+   npm install
+   ```
+2. Start the Vite React development server:
+   ```bash
+   npm run dev
+   ```
+   *The UI runs at `http://localhost:5173`. Tailwind is pre-configured.*
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🛡️ Security Measures
+- **Role-Based Access Control**: `EMPLOYER`, `WORKER`, and `ADMIN` routes are strictly delineated.
+- **IDOR Prevention**: Employers only retrieve jobs matching their `req.user.id`.
+- **Bot Mitigation**: Uses `express-rate-limit` on all API endpoints.
+- **Header Hardening**: Implemented via `helmet`.
+- **Encryption**: Standard BCrypt (10 rounds salt).
+
+## ✨ Admin Note
+Do **NOT** use dummy data generator scripts. Real production data flow triggers should be used to simulate platform economy accurately.

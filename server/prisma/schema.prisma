@@ -1,0 +1,204 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String            @id @default(uuid())
+  email             String            @unique
+  phone             String?           @unique
+  passwordHash      String
+  fullName          String
+  role              Role
+  locationCity      String?
+  locationLat       Float?
+  locationLng       Float?
+  profilePhotoUrl   String?
+  isVerified        Boolean           @default(false)
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  employerProfile   EmployerProfile?
+  workerProfile     WorkerProfile?
+
+  // Relations
+  jobsPosted        Job[]             @relation("EmployerJobs")
+  applications      Application[]     @relation("WorkerApplications")
+  ratingsGiven      Rating[]          @relation("Rater")
+  ratingsReceived   Rating[]          @relation("Ratee")
+  notifications     Notification[]
+  transactionsAsEmployer Transaction[] @relation("EmployerTransactions")
+  transactionsAsWorker   Transaction[] @relation("WorkerTransactions")
+  disputesReported  Dispute[]         @relation("DisputeReporter")
+}
+
+enum Role {
+  EMPLOYER
+  WORKER
+  ADMIN
+}
+
+model EmployerProfile {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName        String?
+  businessDescription String?
+  industry            String?
+  logoUrl             String?
+  totalJobsPosted     Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model WorkerProfile {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio                String?
+  skills             String[]
+  availabilityDays   String[]
+  availabilityTimes  String?
+  preferredRadiusKm  Int?     @default(10)
+  averageRating      Float    @default(0)
+  totalJobsCompleted Int      @default(0)
+  totalEarned        Float    @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Job {
+  id                  String   @id @default(uuid())
+  employerId          String
+  employer            User     @relation("EmployerJobs", fields: [employerId], references: [id])
+  title               String
+  description         String
+  category            String
+  workersNeeded       Int
+  workersAccepted     Int      @default(0)
+  jobDate             DateTime
+  startTime           String
+  durationHours       Float
+  locationAddress     String
+  locationLat         Float?
+  locationLng         Float?
+  payPerWorker        Float
+  totalPayWithFee     Float
+  paymentMethod       PaymentMethod
+  applicationDeadline DateTime
+  specialRequirements String?
+  status              JobStatus @default(DRAFT)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  applications        Application[]
+  ratings             Rating[]
+  transactions        Transaction[]
+  disputes            Dispute[]
+}
+
+enum PaymentMethod {
+  MPESA
+  AIRTEL
+}
+
+enum JobStatus {
+  DRAFT
+  ACTIVE
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Application {
+  id           String            @id @default(uuid())
+  jobId        String
+  job          Job               @relation(fields: [jobId], references: [id])
+  workerId     String
+  worker       User              @relation("WorkerApplications", fields: [workerId], references: [id])
+  coverMessage String?
+  status       ApplicationStatus @default(PENDING)
+  appliedAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+}
+
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  JOB_COMPLETED
+}
+
+model Rating {
+  id         String   @id @default(uuid())
+  jobId      String
+  job        Job      @relation(fields: [jobId], references: [id])
+  raterId    String
+  rater      User     @relation("Rater", fields: [raterId], references: [id])
+  rateeId    String
+  ratee      User     @relation("Ratee", fields: [rateeId], references: [id])
+  stars      Int      // 1-5
+  reviewText String?
+  createdAt  DateTime @default(now())
+}
+
+model Transaction {
+  id             String            @id @default(uuid())
+  jobId          String
+  job            Job               @relation(fields: [jobId], references: [id])
+  employerId     String
+  employer       User              @relation("EmployerTransactions", fields: [employerId], references: [id])
+  workerId       String
+  worker         User              @relation("WorkerTransactions", fields: [workerId], references: [id])
+  amount         Float
+  commission     Float
+  workerAmount   Float
+  paymentMethod  PaymentMethod
+  paymentProof   String?           // image URL
+  status         TransactionStatus @default(PENDING)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+enum TransactionStatus {
+  PENDING
+  VERIFYING
+  FUNDED
+  IN_PROGRESS
+  COMPLETED
+  RELEASED
+  CANCELLED
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Dispute {
+  id          String        @id @default(uuid())
+  jobId       String
+  job         Job           @relation(fields: [jobId], references: [id])
+  reporterId  String
+  reporter    User          @relation("DisputeReporter", fields: [reporterId], references: [id])
+  description String
+  status      DisputeStatus @default(OPEN)
+  adminNotes  String?
+  createdAt   DateTime      @default(now())
+}
+
+enum DisputeStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+}

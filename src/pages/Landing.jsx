@@ -1,184 +1,106 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { Zap, Shield, CreditCard, MapPin, ArrowRight, Users, Briefcase, Star, Clock, CheckCircle } from 'lucide-react';
-import { platformStats, categories, reviews } from '../data/mockData';
-import ReviewCard from '../components/ReviewCard';
-import './Landing.css';
+import { Briefcase, UserCheck, Star, ShieldCheck, MapPin, Clock } from 'lucide-react';
 
-export default function Landing() {
-  const features = [
-    { icon: Zap, title: 'Instant Matching', desc: 'Post a job and get matched with qualified workers in minutes, not days.', color: 'blue' },
-    { icon: Shield, title: 'Trust & Safety', desc: 'Verified profiles, background checks, and a rating system you can count on.', color: 'violet' },
-    { icon: CreditCard, title: 'Fast Payments', desc: 'Secure payments processed within hours. No chasing invoices.', color: 'emerald' },
-    { icon: MapPin, title: 'Location Smart', desc: 'Find workers nearby or hire remote talent. Distance-based matching built in.', color: 'amber' },
-  ];
-
-  const steps = [
-    { num: '01', title: 'Post or Discover', desc: 'Employers post a gig or full-time role. Workers browse and search opportunities.', icon: Briefcase },
-    { num: '02', title: 'Match & Apply', desc: 'Workers apply instantly. Employers review profiles, ratings, and select the best fit.', icon: Users },
-    { num: '03', title: 'Work & Get Paid', desc: 'Track progress in real-time. Payments are automated and secured by the platform.', icon: CheckCircle },
-  ];
-
-  const stats = [
-    { value: '12K+', label: 'Jobs Posted', icon: Briefcase },
-    { value: '8K+', label: 'Active Workers', icon: Users },
-    { value: '4.8', label: 'Avg Rating', icon: Star },
-    { value: '<2hrs', label: 'Avg Payout', icon: Clock },
-  ];
-
+const Landing = () => {
   return (
-    <div className="landing">
-      {/* Hero */}
-      <section className="hero">
-        <div className="hero-bg-orbs">
-          <div className="orb orb-1"></div>
-          <div className="orb orb-2"></div>
-          <div className="orb orb-3"></div>
+    <div className="flex flex-col min-h-screen">
+      {/* Hero Section */}
+      <section className="bg-primary-900 text-white pt-20 pb-32 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[#0e4a6e] opacity-40 mix-blend-multiply pointer-events-none"></div>
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+          <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+          <div className="absolute top-32 -right-24 w-96 h-96 bg-accent-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
         </div>
 
-        <div className="container hero-content">
-          <div className="hero-badge animate-fade-in-down">
-            <Zap size={14} />
-            <span>The Future of Hiring is Here</span>
-          </div>
-
-          <h1 className="hero-title animate-fade-in-up delay-1">
-            Hire Talent<br />
-            <span className="gradient-text">As Easy As</span><br />
-            Ordering a Ride
+        <div className="relative z-10 max-w-7xl mx-auto flex flex-col items-center text-center mt-12">
+          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-6">
+            Hire workers as easy as <br className="hidden md:block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-400 to-yellow-300">
+               ordering a ride.
+            </span>
           </h1>
-
-          <p className="hero-description animate-fade-in-up delay-2">
-            Post a job, get matched with verified workers instantly, and manage everything — 
-            from gig work to full-time careers — all in one powerful platform.
+          <p className="mt-4 text-xl md:text-2xl text-primary-100 max-w-3xl mb-10">
+            KaziLink connects employers with nearby temporary workers instantly. No waiting, no hassle.
           </p>
-
-          <div className="hero-actions animate-fade-in-up delay-3">
-            <Link to="/post-job" className="btn btn-primary btn-lg">
-              <Briefcase size={18} />
-              Hire Now
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+            <Link to="/register?role=EMPLOYER" className="px-8 py-4 bg-accent-600 hover:bg-accent-500 text-white rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 text-center">
+              I Want to Hire
             </Link>
-            <Link to="/browse-jobs" className="btn btn-secondary btn-lg">
-              Find Work
-              <ArrowRight size={18} />
+            <Link to="/register?role=WORKER" className="px-8 py-4 bg-white text-primary-900 hover:bg-primary-50 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 text-center border-2 border-transparent">
+              I Want to Work
             </Link>
           </div>
-
-          <div className="hero-stats animate-fade-in-up delay-4">
-            {stats.map((stat, i) => (
-              <div key={i} className="hero-stat">
-                <stat.icon size={18} className="hero-stat-icon" />
-                <span className="hero-stat-value">{stat.value}</span>
-                <span className="hero-stat-label">{stat.label}</span>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="section">
-        <div className="container">
-          <div className="section-header">
-            <h2 className="section-title">Why <span className="gradient-text">GigHire</span>?</h2>
-            <p className="section-subtitle">
-              Everything you need to hire and work, built into one seamless experience.
-            </p>
-          </div>
-
-          <div className="features-grid">
-            {features.map((feat, i) => (
-              <div key={i} className={`feature-card card animate-fade-in-up delay-${i + 1}`}>
-                <div className={`feature-icon feature-icon-${feat.color}`}>
-                  <feat.icon size={24} />
-                </div>
-                <h3 className="feature-title">{feat.title}</h3>
-                <p className="feature-desc">{feat.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="section how-it-works-section">
-        <div className="container">
-          <div className="section-header">
-            <h2 className="section-title">How It <span className="gradient-text">Works</span></h2>
-            <p className="section-subtitle">
-              Three simple steps to get started — whether you're hiring or looking for work.
-            </p>
-          </div>
-
-          <div className="steps-grid">
-            {steps.map((step, i) => (
-              <div key={i} className="step-card animate-fade-in-up delay-2">
-                <div className="step-number">{step.num}</div>
-                <div className="step-icon-wrap">
-                  <step.icon size={28} />
-                </div>
-                <h3 className="step-title">{step.title}</h3>
-                <p className="step-desc">{step.desc}</p>
-                {i < steps.length - 1 && <div className="step-connector"></div>}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Categories */}
-      <section className="section">
-        <div className="container">
-          <div className="section-header">
-            <h2 className="section-title">Browse by <span className="gradient-text">Category</span></h2>
-            <p className="section-subtitle">
-              Find opportunities across dozens of industries and skill categories.
-            </p>
-          </div>
-
-          <div className="categories-grid">
-            {categories.slice(0, 8).map((cat) => (
-              <Link key={cat.id} to="/browse-jobs" className="category-card card">
-                <span className="category-count">{cat.count} jobs</span>
-                <span className="category-name">{cat.name}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="section">
-        <div className="container">
-          <div className="section-header">
-            <h2 className="section-title">Trusted by <span className="gradient-text">Thousands</span></h2>
-            <p className="section-subtitle">
-              See what employers and workers are saying about GigHire.
-            </p>
-          </div>
-
-          <div className="testimonials-grid">
-            {reviews.slice(0, 3).map(review => (
-              <ReviewCard key={review.id} review={review} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="section cta-section">
-        <div className="container">
-          <div className="cta-card">
-            <h2 className="cta-title">Ready to Get Started?</h2>
-            <p className="cta-desc">
-              Join thousands of employers and workers who are already using GigHire.
-            </p>
-            <div className="cta-actions">
-              <Link to="/post-job" className="btn btn-primary btn-lg">Post Your First Job</Link>
-              <Link to="/browse-jobs" className="btn btn-secondary btn-lg">Start Working Today</Link>
+      {/* Stats row pseudo */}
+      <div className="relative z-20 max-w-5xl mx-auto -mt-16 px-4 w-full">
+         <div className="bg-white rounded-2xl shadow-xl flex flex-col md:flex-row justify-around items-center p-8 border border-gray-100 gap-8 md:gap-0">
+            <div className="text-center">
+              <p className="text-4xl font-bold text-primary-800">10k+</p>
+              <p className="text-gray-500 mt-1 uppercase font-semibold text-sm tracking-wider">Jobs Completed</p>
             </div>
+            <div className="w-px h-12 bg-gray-200 hidden md:block"></div>
+            <div className="text-center">
+              <p className="text-4xl font-bold text-primary-800">5k+</p>
+              <p className="text-gray-500 mt-1 uppercase font-semibold text-sm tracking-wider">Active Workers</p>
+            </div>
+            <div className="w-px h-12 bg-gray-200 hidden md:block"></div>
+            <div className="text-center">
+              <p className="text-4xl font-bold text-primary-800">4.8</p>
+              <p className="text-gray-500 mt-1 uppercase font-semibold text-sm tracking-wider flex items-center justify-center">
+                <Star className="w-4 h-4 text-accent-500 mr-1 inline" /> Avg Rating
+              </p>
+            </div>
+         </div>
+      </div>
+
+      {/* How it works */}
+      <section className="py-24 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-extrabold text-primary-900">How KaziLink Works</h2>
+            <p className="mt-4 text-xl text-gray-600">Bridging the gap between employers and gig workers in three simple steps.</p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-12">
+            {[
+              { 
+                icon: <MapPin className="w-10 h-10 text-white" />, 
+                title: '1. Post a Job', 
+                desc: 'Describe what you need, where you need it, and how much you are paying.' 
+              },
+              { 
+                icon: <Clock className="w-10 h-10 text-white" />, 
+                title: '2. Instant Match', 
+                desc: 'Nearby workers are notified instantly and apply within seconds.' 
+              },
+              { 
+                icon: <ShieldCheck className="w-10 h-10 text-white" />, 
+                title: '3. Get it Done', 
+                desc: 'Review applicants, select the best fit, and we handle the trust and payments.' 
+              }
+            ].map((step, idx) => (
+              <div key={idx} className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-1 bg-primary-500 transform scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300"></div>
+                <div className="bg-primary-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-md transform group-hover:rotate-6 transition-transform">
+                  {step.icon}
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">{step.title}</h3>
+                <p className="text-gray-600 leading-relaxed">{step.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
+      
+      {/* Footer */}
+      <footer className="bg-primary-950 py-12 text-center text-primary-200 mt-auto">
+        <p>&copy; {new Date().getFullYear()} KaziLink. All rights reserved.</p>
+      </footer>
     </div>
   );
-}
+};
+
+export default Landing;
