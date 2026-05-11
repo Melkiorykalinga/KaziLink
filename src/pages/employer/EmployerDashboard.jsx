@@ -40,7 +40,10 @@ const EmployerDashboard = () => {
             >
               <DollarSign size={18} className="mr-1.5" /> Transactions
             </button>
-            <button className="flex items-center bg-accent-600 hover:bg-accent-500 text-white px-5 py-2.5 rounded-lg shadow-md transition-all active:scale-95 font-medium">
+            <button
+              onClick={() => navigate('/employer/post-job')}
+              className="flex items-center bg-accent-600 hover:bg-accent-500 text-white px-5 py-2.5 rounded-lg shadow-md transition-all active:scale-95 font-medium"
+            >
               <Plus size={18} className="mr-2" /> Post a New Job
             </button>
           </div>

@@ -9,6 +9,7 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import EmployerDashboard from './pages/employer/EmployerDashboard';
 import EmployerTransactions from './pages/employer/EmployerTransactions';
+import PostJob from './pages/employer/PostJob';
 import WorkerDashboard from './pages/worker/WorkerDashboard';
 import WorkerTransactions from './pages/worker/WorkerTransactions';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -50,6 +51,7 @@ function App() {
                   <Routes>
                     <Route path="dashboard" element={<EmployerDashboard />} />
                     <Route path="transactions" element={<EmployerTransactions />} />
+                    <Route path="post-job" element={<PostJob />} />
                   </Routes>
                 </ProtectedRoute>
               } />

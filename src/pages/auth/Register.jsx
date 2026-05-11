@@ -43,16 +43,21 @@ const Register = () => {
       return;
     }
 
-    const result = await register(formData);
-    if (result.success) {
-      if (result.user.role === 'EMPLOYER') navigate('/employer/dashboard');
-      else if (result.user.role === 'WORKER') navigate('/worker/dashboard');
-      else if (result.user.role === 'ADMIN') navigate('/admin');
-      else navigate('/');
-    } else {
-      setError(result.error);
+    try {
+      const result = await register(formData);
+      if (result.success) {
+        if (result.user.role === 'EMPLOYER') navigate('/employer/dashboard');
+        else if (result.user.role === 'WORKER') navigate('/worker/dashboard');
+        else if (result.user.role === 'ADMIN') navigate('/admin');
+        else navigate('/');
+      } else {
+        setError(result.error || 'Registration failed. Please try again.');
+      }
+    } catch (err) {
+      setError('Network error. Please check your connection and try again.');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
