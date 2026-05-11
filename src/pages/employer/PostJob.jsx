@@ -22,7 +22,8 @@ const initialForm = {
   locationAddress: '',
   payPerWorker: '',
   paymentMethod: 'MPESA',
-  applicationDeadline: '',
+  deadlineDate: '',
+  deadlineTime: '18:00',
   specialRequirements: '',
 };
 
@@ -40,18 +41,22 @@ export default function PostJob() {
     setLoading(true);
     setError('');
     try {
+      // Combine separate date + time fields into ISO strings
+      const jobDateISO = new Date(`${formData.jobDate}T${formData.startTime}:00`).toISOString();
+      const deadlineISO = new Date(`${formData.deadlineDate}T${formData.deadlineTime}:00`).toISOString();
+
       await api.post('/jobs', {
         title: formData.title,
         description: formData.description,
         category: formData.category,
         workersNeeded: Number(formData.workersNeeded),
-        jobDate: formData.jobDate,
+        jobDate: jobDateISO,
         startTime: formData.startTime,
         durationHours: Number(formData.durationHours),
         locationAddress: formData.locationAddress,
         payPerWorker: Number(formData.payPerWorker),
         paymentMethod: formData.paymentMethod,
-        applicationDeadline: formData.applicationDeadline,
+        applicationDeadline: deadlineISO,
         specialRequirements: formData.specialRequirements || null,
       });
       setStep(5); // success
@@ -163,9 +168,13 @@ export default function PostJob() {
               <input className="pj-input" type="number" min={0.5} step={0.5} placeholder="e.g. 8"
                 value={formData.durationHours} onChange={e => update('durationHours', e.target.value)} />
             </Field>
-            <Field label="Application Deadline *">
-              <input className="pj-input" type="datetime-local"
-                value={formData.applicationDeadline} onChange={e => update('applicationDeadline', e.target.value)} />
+            <Field label="Application Deadline Date *">
+              <input className="pj-input" type="date"
+                value={formData.deadlineDate} onChange={e => update('deadlineDate', e.target.value)} />
+            </Field>
+            <Field label="Application Deadline Time *">
+              <input className="pj-input" type="time"
+                value={formData.deadlineTime} onChange={e => update('deadlineTime', e.target.value)} />
             </Field>
             <Actions onBack={() => setStep(1)} onNext={() => setStep(3)} />
           </Card>
@@ -296,7 +305,7 @@ function ReviewGrid({ data }) {
     ['Duration', `${data.durationHours} hours`],
     ['Pay Per Worker', `KES ${Number(data.payPerWorker).toLocaleString()}`],
     ['Payment Method', data.paymentMethod],
-    ['Application Deadline', data.applicationDeadline?.replace('T', ' ')],
+    ['Application Deadline', data.deadlineDate && data.deadlineTime ? `${data.deadlineDate} at ${data.deadlineTime}` : '—'],
     ['Description', data.description],
     ['Special Requirements', data.specialRequirements || '—'],
   ];
