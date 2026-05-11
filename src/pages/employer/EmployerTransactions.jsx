@@ -141,15 +141,15 @@ const EmployerTransactions = () => {
                     <div className="grid grid-cols-3 gap-4 bg-gray-50 rounded-lg p-4 mb-4">
                       <div>
                         <p className="text-xs text-gray-400 uppercase tracking-wider">Total</p>
-                        <p className="text-lg font-bold text-gray-900">KES {tx.amount?.toLocaleString()}</p>
+                        <p className="text-lg font-bold text-gray-900">TSh {tx.amount?.toLocaleString()}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-400 uppercase tracking-wider">Commission</p>
-                        <p className="text-lg font-bold text-red-500">KES {tx.commission?.toLocaleString()}</p>
+                        <p className="text-lg font-bold text-red-500">TSh {tx.commission?.toLocaleString()}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-400 uppercase tracking-wider">Worker Gets</p>
-                        <p className="text-lg font-bold text-green-600">KES {tx.workerAmount?.toLocaleString()}</p>
+                        <p className="text-lg font-bold text-green-600">TSh {tx.workerAmount?.toLocaleString()}</p>
                       </div>
                     </div>
 

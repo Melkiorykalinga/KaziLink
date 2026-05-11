@@ -116,8 +116,8 @@ const WorkerTransactions = () => {
                     {/* Earnings */}
                     <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 mb-4 border border-green-100">
                       <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">You Will Earn</p>
-                      <p className="text-2xl font-bold text-green-700">KES {tx.workerAmount?.toLocaleString()}</p>
-                      <p className="text-xs text-gray-400 mt-1">Total: KES {tx.amount?.toLocaleString()} · Platform fee: KES {tx.commission?.toLocaleString()}</p>
+                      <p className="text-2xl font-bold text-green-700">TSh {tx.workerAmount?.toLocaleString()}</p>
+                      <p className="text-xs text-gray-400 mt-1">Total: TSh {tx.amount?.toLocaleString()} · Platform fee: TSh {tx.commission?.toLocaleString()}</p>
                     </div>
 
                     {/* State Machine Steps */}
@@ -172,7 +172,7 @@ const WorkerTransactions = () => {
                         <p className="text-sm text-green-600 flex items-center"><Clock size={14} className="mr-1.5" /> Waiting for employer to release payment...</p>
                       )}
                       {tx.status === 'RELEASED' && (
-                        <p className="text-sm text-emerald-700 font-semibold flex items-center"><DollarSign size={14} className="mr-1.5" /> Payment received! KES {tx.workerAmount?.toLocaleString()}</p>
+                        <p className="text-sm text-emerald-700 font-semibold flex items-center"><DollarSign size={14} className="mr-1.5" /> Payment received! TSh {tx.workerAmount?.toLocaleString()}</p>
                       )}
                     </div>
                   </div>

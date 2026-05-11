@@ -28,7 +28,7 @@ const Navbar = () => {
 
       return (
         <Link to={path} className={linkClass} onClick={() => isMobile && setIsOpen(false)}>
-          <LayoutDashboard size={18} className="mr-2" /> Dashboard
+          <LayoutDashboard size={18} className="mr-2" /> Dashboard (Dashibodi)
         </Link>
       );
     };
@@ -39,7 +39,7 @@ const Navbar = () => {
       const path = user.role === 'EMPLOYER' ? '/employer/transactions' : '/worker/transactions';
       return (
         <Link to={path} className={linkClass} onClick={() => isMobile && setIsOpen(false)}>
-          <Receipt size={18} className="mr-2" /> Transactions
+          <Receipt size={18} className="mr-2" /> Transactions (Miamala)
         </Link>
       );
     };

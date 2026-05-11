@@ -21,14 +21,14 @@ const Landing = () => {
             </span>
           </h1>
           <p className="mt-4 text-xl md:text-2xl text-primary-100 max-w-3xl mb-10">
-            KaziLink connects employers with nearby temporary workers instantly. No waiting, no hassle.
+            KaziLink connects employers with nearby temporary workers instantly. No waiting, no hassle. (KaziLink inakuunganisha na wafanyakazi wa muda papo hapo. Hakuna kusubiri, hakuna usumbufu.)
           </p>
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
             <Link to="/register?role=EMPLOYER" className="px-8 py-4 bg-accent-600 hover:bg-accent-500 text-white rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 text-center">
-              I Want to Hire
+              I Want to Hire (Natafuta Mfanyakazi)
             </Link>
             <Link to="/register?role=WORKER" className="px-8 py-4 bg-white text-primary-900 hover:bg-primary-50 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 text-center border-2 border-transparent">
-              I Want to Work
+              I Want to Work (Natafuta Kazi)
             </Link>
           </div>
         </div>

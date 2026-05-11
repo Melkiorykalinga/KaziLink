@@ -137,7 +137,7 @@ export default function PostJob() {
                 value={formData.description} onChange={e => update('description', e.target.value)} />
             </Field>
             <Field label="Location Address *">
-              <input className="pj-input" placeholder="e.g. Tom Mboya St, Nairobi CBD"
+              <input className="pj-input" placeholder="e.g. Posta, Dar es Salaam"
                 value={formData.locationAddress} onChange={e => update('locationAddress', e.target.value)} />
             </Field>
             <Field label="Number of Workers Needed *">
@@ -183,14 +183,14 @@ export default function PostJob() {
         {/* ── Step 3: Pay ── */}
         {step === 3 && (
           <Card title="Compensation" icon={<DollarSign size={20} />}>
-            <Field label="Pay Per Worker (KES) *">
+            <Field label="Pay Per Worker (TSh) *">
               <input className="pj-input" type="number" min={1} placeholder="e.g. 1500"
                 value={formData.payPerWorker} onChange={e => update('payPerWorker', e.target.value)} />
             </Field>
             {formData.payPerWorker && (
               <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 10, padding: '12px 16px', fontSize: 13, color: '#15803d', marginBottom: 12 }}>
-                💰 Total payout: <strong>KES {(Number(formData.payPerWorker) * Number(formData.workersNeeded)).toLocaleString()}</strong> for {formData.workersNeeded} worker(s)
-                <br />Platform fee (15%): <strong>KES {(Number(formData.payPerWorker) * 0.15 * Number(formData.workersNeeded)).toLocaleString()}</strong>
+                💰 Total payout: <strong>TSh {(Number(formData.payPerWorker) * Number(formData.workersNeeded)).toLocaleString()}</strong> for {formData.workersNeeded} worker(s)
+                <br />Platform fee (15%): <strong>TSh {(Number(formData.payPerWorker) * 0.15 * Number(formData.workersNeeded)).toLocaleString()}</strong>
               </div>
             )}
             <Field label="Payment Method *">
@@ -303,7 +303,7 @@ function ReviewGrid({ data }) {
     ['Job Date', data.jobDate],
     ['Start Time', data.startTime],
     ['Duration', `${data.durationHours} hours`],
-    ['Pay Per Worker', `KES ${Number(data.payPerWorker).toLocaleString()}`],
+    ['Pay Per Worker', `TSh ${Number(data.payPerWorker).toLocaleString()}`],
     ['Payment Method', data.paymentMethod],
     ['Application Deadline', data.deadlineDate && data.deadlineTime ? `${data.deadlineDate} at ${data.deadlineTime}` : '—'],
     ['Description', data.description],

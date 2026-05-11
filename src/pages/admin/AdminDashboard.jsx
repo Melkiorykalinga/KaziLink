@@ -118,7 +118,7 @@ const AdminDashboard = () => {
               <StatCard title="Total Users" value={stats?.totalUsers || 0} icon={<Users className="text-blue-500" />} />
               <StatCard title="Total Jobs Posted" value={stats?.totalJobs || 0} icon={<Briefcase className="text-primary-500" />} />
               <StatCard title="Jobs Completed" value={stats?.completedJobs || 0} icon={<CheckCircleIcon className="text-green-500" />} />
-              <StatCard title="Platform Revenue" value={`KES ${stats?.totalRevenue || 0}`} icon={<DollarSign className="text-yellow-500" />} />
+              <StatCard title="Platform Revenue" value={`TSh ${stats?.totalRevenue || 0}`} icon={<DollarSign className="text-yellow-500" />} />
             </div>
 
             {/* Users Table */}
@@ -219,7 +219,7 @@ const AdminDashboard = () => {
 
                     <div className="bg-gray-50 rounded-lg p-4 inline-block min-w-[200px]">
                       <p className="text-xs text-gray-500 uppercase">Amount to Verify</p>
-                      <p className="text-2xl font-bold text-gray-900">KES {tx.amount?.toLocaleString()}</p>
+                      <p className="text-2xl font-bold text-gray-900">TSh {tx.amount?.toLocaleString()}</p>
                       <p className="text-sm text-gray-500 mt-1">Method: {tx.paymentMethod}</p>
                     </div>
                   </div>

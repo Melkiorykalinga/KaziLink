@@ -119,16 +119,16 @@ const FundJob = () => {
            <h3 className="text-lg font-semibold text-gray-800 mb-4">Payment Summary</h3>
            <div className="flex justify-between items-center mb-2">
               <span className="text-gray-600">Base Pay</span>
-              <span className="font-medium">${job?.payPerWorker || "0.00"}</span>
+              <span className="font-medium">TSh {job?.payPerWorker?.toLocaleString() || "0"}</span>
            </div>
            <div className="flex justify-between items-center mb-4">
               <span className="text-gray-600">Platform Commission (10%)</span>
-              <span className="font-medium">${(job?.payPerWorker * 0.10).toFixed(2) || "0.00"}</span>
+              <span className="font-medium">TSh {(job?.payPerWorker * 0.10).toLocaleString() || "0"}</span>
            </div>
            <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
               <span className="text-gray-800 font-bold">Total to Pay</span>
               <span className="text-2xl font-bold text-green-600">
-                 ${(job?.payPerWorker * 1.10).toFixed(2) || "0.00"}
+                 TSh {(job?.payPerWorker * 1.10).toLocaleString() || "0"}
               </span>
            </div>
         </div>

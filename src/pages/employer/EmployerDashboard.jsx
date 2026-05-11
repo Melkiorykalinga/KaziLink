@@ -54,7 +54,7 @@ const EmployerDashboard = () => {
           <StatCard title="Active Jobs" value={jobs.filter(j => j.status === 'ACTIVE').length || 0} icon={<Briefcase className="text-primary-500" />} />
           <StatCard title="Total Applicants" value="0" icon={<Users className="text-blue-500" />} />
           <StatCard title="Jobs Completed" value={jobs.filter(j => j.status === 'COMPLETED').length || 0} icon={<CheckCircle className="text-green-500" />} />
-          <StatCard title="Total Spent" value="$0" icon={<DollarSign className="text-yellow-500" />} />
+          <StatCard title="Total Spent" value="TSh 0" icon={<DollarSign className="text-yellow-500" />} />
         </div>
 
         {/* Jobs List Section */}
@@ -82,7 +82,7 @@ const EmployerDashboard = () => {
                         <h4 className="text-lg font-semibold text-primary-900">{job.title}</h4>
                         <div className="flex space-x-4 mt-2 text-sm text-gray-500">
                            <span className="flex items-center"><Users size={14} className="mr-1"/> {job.workersNeeded} workers</span>
-                           <span className="flex items-center"><DollarSign size={14} className="mr-1"/> ${job.payPerWorker}/worker</span>
+                           <span className="flex items-center"><DollarSign size={14} className="mr-1"/> TSh {job.payPerWorker?.toLocaleString()}/worker</span>
                         </div>
                       </div>
                       <div>
