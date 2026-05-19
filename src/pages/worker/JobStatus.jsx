@@ -18,7 +18,7 @@ const JobStatus = () => {
       // We will pretend we fetched the transaction object.
       // For a fully built app, this requires GET /transactions/:id handler.
       const res = await api.get(`/transactions/${id}`).catch(() => ({
-         data: { id, status: 'FUNDED', amount: 50, workerAmount: 45, job: { title: "Sample Job" } }
+         data: { id, status: 'FUNDED', amount: 50000, workerAmount: 42500, job: { title: "Sample Job" } }
       }));
       setTransaction(res.data);
     } catch (err) {
@@ -77,7 +77,7 @@ const JobStatus = () => {
            <h2 className="text-lg font-bold text-gray-800 mb-1">{transaction.job?.title || 'Job Title'}</h2>
            <div className="flex justify-between items-center mt-4">
               <span className="text-gray-600">Your Take-Home Pay</span>
-              <span className="font-bold text-green-600 text-xl">${transaction.workerAmount}</span>
+              <span className="font-bold text-green-600 text-xl">TSh {Number(transaction.workerAmount).toLocaleString()}</span>
            </div>
         </div>
 

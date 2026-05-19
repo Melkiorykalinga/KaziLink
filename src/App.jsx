@@ -13,6 +13,7 @@ import PostJob from './pages/employer/PostJob';
 import WorkerDashboard from './pages/worker/WorkerDashboard';
 import WorkerTransactions from './pages/worker/WorkerTransactions';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import WorkerProfile from './pages/WorkerProfile';
 import NotFound from './pages/NotFound';
 
 // Protected Route Component
@@ -44,6 +45,7 @@ function App() {
               <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/worker/:id" element={<WorkerProfile />} />
 
               {/* Employer Routes */}
               <Route path="/employer/*" element={

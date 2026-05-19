@@ -27,7 +27,7 @@ export default function EmployerDashboard() {
           <StatsCard icon={Briefcase} label="Active Jobs" value="5" trend="up" trendValue="+2" color="blue" />
           <StatsCard icon={Users} label="Total Applicants" value="47" trend="up" trendValue="+12" color="violet" />
           <StatsCard icon={CheckCircle} label="Hires Made" value="23" trend="up" trendValue="+3" color="emerald" />
-          <StatsCard icon={DollarSign} label="Total Spent" value="$4,250" trend="up" trendValue="+$800" color="amber" />
+          <StatsCard icon={DollarSign} label="Total Spent" value="TSh 4,250,000" trend="up" trendValue="+TSh 800,000" color="amber" />
         </div>
 
         <div className="dash-tabs">
@@ -91,7 +91,7 @@ export default function EmployerDashboard() {
                   {worker.skills.slice(0, 3).map(s => <Badge key={s} variant="default" size="sm">{s}</Badge>)}
                 </div>
                 <div className="applicant-meta">
-                  <span>${worker.hourlyRate}/hr</span>
+                  <span>TSh {Number(worker.hourlyRate).toLocaleString()}/hr</span>
                   <span>{worker.completedJobs} jobs</span>
                 </div>
                 <div className="applicant-actions">

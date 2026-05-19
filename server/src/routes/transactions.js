@@ -244,6 +244,59 @@ router.post('/release/:id', authenticate, requireRole(['EMPLOYER']), async (req,
 });
 
 // ============================================================
+// POST /api/transactions/:id/rate
+// Employer rates and endorses a worker
+// ============================================================
+router.post('/:id/rate', authenticate, requireRole(['EMPLOYER']), async (req, res) => {
+  try {
+    const { stars, reviewText } = req.body;
+    const transaction = await prisma.transaction.findUnique({ where: { id: req.params.id } });
+
+    if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
+    if (transaction.employerId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+    if (transaction.status !== 'RELEASED' && transaction.status !== 'COMPLETED') {
+      return res.status(400).json({ error: 'Job must be completed before rating' });
+    }
+
+    if (!stars || stars < 1 || stars > 5) {
+      return res.status(400).json({ error: 'Stars must be between 1 and 5' });
+    }
+
+    const existingRating = await prisma.rating.findFirst({
+      where: { jobId: transaction.jobId, raterId: req.user.id, rateeId: transaction.workerId }
+    });
+
+    if (existingRating) return res.status(400).json({ error: 'You have already rated this worker for this job' });
+
+    const rating = await prisma.rating.create({
+      data: {
+        jobId: transaction.jobId,
+        raterId: req.user.id,
+        rateeId: transaction.workerId,
+        stars,
+        reviewText: reviewText ? reviewText.substring(0, 120) : null
+      }
+    });
+
+    // Update average rating on worker profile
+    const allRatings = await prisma.rating.findMany({
+      where: { rateeId: transaction.workerId }
+    });
+    const average = allRatings.reduce((acc, r) => acc + r.stars, 0) / allRatings.length;
+
+    await prisma.workerProfile.update({
+      where: { userId: transaction.workerId },
+      data: { averageRating: average }
+    });
+
+    res.status(201).json(rating);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to submit rating' });
+  }
+});
+
+// ============================================================
 // PATCH /api/transactions/cancel/:id → CANCELLED
 // Admin or Employer can cancel a transaction (only if not yet IN_PROGRESS)
 // ============================================================

@@ -58,11 +58,13 @@ const authRoutes = require('./routes/auth');
 const jobRoutes = require('./routes/jobs');
 const adminRoutes = require('./routes/admin');
 const transactionRoutes = require('./routes/transactions');
+const profileRoutes = require('./routes/profile');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/profile', profileRoutes);
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

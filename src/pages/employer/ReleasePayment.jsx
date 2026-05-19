@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../../services/api';
 import { CheckCircle, AlertTriangle, Loader, Unlock } from 'lucide-react';
@@ -15,7 +15,7 @@ const ReleasePayment = () => {
     const fetchTransaction = async () => {
       try {
         const res = await api.get(`/transactions/${id}`).catch(() => ({
-            data: { id, status: 'COMPLETED', amount: 50, workerAmount: 45, job: { title: "Sample Job" }, worker: { fullName: "Jane Doe" } }
+            data: { id, status: 'COMPLETED', amount: 50000, workerAmount: 42500, job: { title: "Sample Job" }, worker: { fullName: "Jane Doe" } }
         }));
         setTransaction(res.data);
       } catch (err) {
@@ -69,11 +69,11 @@ const ReleasePayment = () => {
            </div>
            <div className="flex justify-between items-center mb-3">
               <span className="text-gray-700 font-medium">Amount Holding</span>
-              <span className="text-gray-900 font-bold">${transaction.amount}</span>
+              <span className="text-gray-900 font-bold">TSh {Number(transaction.amount).toLocaleString()}</span>
            </div>
            <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
               <span className="text-gray-900 font-bold">Release to Worker</span>
-              <span className="text-2xl font-bold text-green-600">${transaction.workerAmount}</span>
+              <span className="text-2xl font-bold text-green-600">TSh {Number(transaction.workerAmount).toLocaleString()}</span>
            </div>
         </div>
 
@@ -102,3 +102,4 @@ const ReleasePayment = () => {
 };
 
 export default ReleasePayment;
+

@@ -59,7 +59,7 @@ export default function WorkerCard({ worker }) {
       <div className="worker-card-footer">
         <div className="worker-rate">
           <DollarSign size={15} />
-          <span>${worker.hourlyRate}/hr</span>
+          <span>TSh {Number(worker.hourlyRate).toLocaleString()}/hr</span>
         </div>
         <span className="btn btn-sm btn-outline">View Profile</span>
       </div>

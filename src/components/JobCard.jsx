@@ -10,10 +10,10 @@ export default function JobCard({ job }) {
   const hasApplied = applications.includes(job.id);
 
   const formatPay = () => {
-    if (job.payType === 'hourly') return `$${job.pay}/hr`;
-    if (job.payType === 'fixed') return `$${job.pay} fixed`;
-    if (job.payType === 'yearly') return `$${(job.pay / 1000).toFixed(0)}k/yr`;
-    return `$${job.pay}`;
+    if (job.payType === 'hourly') return `TSh ${Number(job.pay).toLocaleString()}/hr`;
+    if (job.payType === 'fixed') return `TSh ${Number(job.pay).toLocaleString()} fixed`;
+    if (job.payType === 'yearly') return `TSh ${(job.pay / 1000).toFixed(0)}k/yr`;
+    return `TSh ${Number(job.pay).toLocaleString()}`;
   };
 
   const urgencyVariant = {

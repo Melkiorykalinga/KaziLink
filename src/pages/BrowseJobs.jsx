@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Search, SlidersHorizontal, MapPin, Grid3X3, List } from 'lucide-react';
 import { jobs, categories } from '../data/mockData';
 import JobCard from '../components/JobCard';
@@ -49,14 +49,14 @@ export default function BrowseJobs() {
             className={`tab-btn ${activeTab === 'gig' ? 'active' : ''}`}
             onClick={() => setActiveTab('gig')}
           >
-            ⚡ Quick Gigs
+            âš¡ Quick Gigs
             <span className="tab-count">{jobs.filter(j => j.type === 'gig').length}</span>
           </button>
           <button
             className={`tab-btn ${activeTab === 'fulltime' ? 'active' : ''}`}
             onClick={() => setActiveTab('fulltime')}
           >
-            💼 Career Opportunities
+            ðŸ’¼ Career Opportunities
             <span className="tab-count">{jobs.filter(j => j.type === 'full-time').length}</span>
           </button>
         </div>
@@ -88,18 +88,18 @@ export default function BrowseJobs() {
             <div className="filter-group">
               <h4>Pay Range</h4>
               <div className="filter-options">
-                <label className="filter-option"><input type="checkbox" /><span>Under $20/hr</span></label>
-                <label className="filter-option"><input type="checkbox" /><span>$20 - $30/hr</span></label>
-                <label className="filter-option"><input type="checkbox" /><span>$30 - $50/hr</span></label>
-                <label className="filter-option"><input type="checkbox" /><span>$50+/hr</span></label>
+                <label className="filter-option"><input type="checkbox" /><span>Under TSh 25,000/hr</span></label>
+                <label className="filter-option"><input type="checkbox" /><span>TSh 25,000 - 40,000/hr</span></label>
+                <label className="filter-option"><input type="checkbox" /><span>TSh 40,000 - 65,000/hr</span></label>
+                <label className="filter-option"><input type="checkbox" /><span>TSh 65,000+/hr</span></label>
               </div>
             </div>
 
             <div className="filter-group">
               <h4>Urgency</h4>
               <div className="filter-options">
-                <label className="filter-option"><input type="checkbox" /><span>🔥 Urgent</span></label>
-                <label className="filter-option"><input type="checkbox" /><span>⏰ Today</span></label>
+                <label className="filter-option"><input type="checkbox" /><span>ðŸ”¥ Urgent</span></label>
+                <label className="filter-option"><input type="checkbox" /><span>â° Today</span></label>
                 <label className="filter-option"><input type="checkbox" /><span>Normal</span></label>
               </div>
             </div>
@@ -107,10 +107,10 @@ export default function BrowseJobs() {
             <div className="filter-group">
               <h4>Distance</h4>
               <div className="filter-options">
-                <label className="filter-option"><input type="checkbox" /><span><MapPin size={12} /> Within 5 mi</span></label>
-                <label className="filter-option"><input type="checkbox" /><span><MapPin size={12} /> Within 10 mi</span></label>
-                <label className="filter-option"><input type="checkbox" /><span><MapPin size={12} /> Within 25 mi</span></label>
-                <label className="filter-option"><input type="checkbox" /><span>🌐 Remote</span></label>
+                <label className="filter-option"><input type="checkbox" /><span><MapPin size={12} /> Within 5 km</span></label>
+                <label className="filter-option"><input type="checkbox" /><span><MapPin size={12} /> Within 10 km</span></label>
+                <label className="filter-option"><input type="checkbox" /><span><MapPin size={12} /> Within 25 km</span></label>
+                <label className="filter-option"><input type="checkbox" /><span>ðŸŒ Remote</span></label>
               </div>
             </div>
           </aside>
@@ -159,3 +159,5 @@ export default function BrowseJobs() {
     </div>
   );
 }
+
+

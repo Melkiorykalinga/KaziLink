@@ -3,50 +3,41 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id                String            @id @default(uuid())
-  email             String            @unique
-  phone             String?           @unique
-  passwordHash      String
-  fullName          String
-  role              Role
-  locationCity      String?
-  locationLat       Float?
-  locationLng       Float?
-  profilePhotoUrl   String?
-  isVerified        Boolean           @default(false)
-  isActive          Boolean           @default(true)
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-
-  employerProfile   EmployerProfile?
-  workerProfile     WorkerProfile?
-
-  // Relations
-  jobsPosted        Job[]             @relation("EmployerJobs")
-  applications      Application[]     @relation("WorkerApplications")
-  ratingsGiven      Rating[]          @relation("Rater")
-  ratingsReceived   Rating[]          @relation("Ratee")
-  notifications     Notification[]
-  transactionsAsEmployer Transaction[] @relation("EmployerTransactions")
-  transactionsAsWorker   Transaction[] @relation("WorkerTransactions")
-  disputesReported  Dispute[]         @relation("DisputeReporter")
-}
-
-enum Role {
-  EMPLOYER
-  WORKER
-  ADMIN
+  id                     String           @id @default(uuid())
+  email                  String           @unique
+  phone                  String?          @unique
+  passwordHash           String
+  fullName               String
+  role                   Role
+  locationCity           String?
+  locationLat            Float?
+  locationLng            Float?
+  profilePhotoUrl        String?
+  isVerified             Boolean          @default(false)
+  isActive               Boolean          @default(true)
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  applications           Application[]    @relation("WorkerApplications")
+  disputesReported       Dispute[]        @relation("DisputeReporter")
+  employerProfile        EmployerProfile?
+  jobsPosted             Job[]            @relation("EmployerJobs")
+  notifications          Notification[]
+  ratingsReceived        Rating[]         @relation("Ratee")
+  ratingsGiven           Rating[]         @relation("Rater")
+  transactionsAsEmployer Transaction[]    @relation("EmployerTransactions")
+  transactionsAsWorker   Transaction[]    @relation("WorkerTransactions")
+  workerProfile          WorkerProfile?
 }
 
 model EmployerProfile {
   id                  String   @id @default(uuid())
   userId              String   @unique
-  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   businessName        String?
   businessDescription String?
   industry            String?
@@ -54,33 +45,46 @@ model EmployerProfile {
   totalJobsPosted     Int      @default(0)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model WorkerProfile {
-  id                 String   @id @default(uuid())
-  userId             String   @unique
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                 String             @id @default(uuid())
+  userId             String             @unique
   bio                String?
   skills             String[]
   availabilityDays   String[]
   availabilityTimes  String?
-  preferredRadiusKm  Int?     @default(10)
-  averageRating      Float    @default(0)
-  totalJobsCompleted Int      @default(0)
-  totalEarned        Float    @default(0)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  preferredRadiusKm  Int?               @default(10)
+  averageRating      Float              @default(0)
+  totalJobsCompleted Int                @default(0)
+  totalEarned        Float              @default(0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  availabilityStatus AvailabilityStatus @default(AVAILABLE_NOW)
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verifiedSkills     WorkerSkill[]
+}
+
+model WorkerSkill {
+  id              String        @id @default(uuid())
+  workerProfileId String
+  name            String
+  isVerified      Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  workerProfile   WorkerProfile @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([workerProfileId, name])
 }
 
 model Job {
-  id                  String   @id @default(uuid())
+  id                  String        @id @default(uuid())
   employerId          String
-  employer            User     @relation("EmployerJobs", fields: [employerId], references: [id])
   title               String
   description         String
   category            String
   workersNeeded       Int
-  workersAccepted     Int      @default(0)
+  workersAccepted     Int           @default(0)
   jobDate             DateTime
   startTime           String
   durationHours       Float
@@ -92,14 +96,91 @@ model Job {
   paymentMethod       PaymentMethod
   applicationDeadline DateTime
   specialRequirements String?
-  status              JobStatus @default(DRAFT)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-
+  status              JobStatus     @default(DRAFT)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
   applications        Application[]
+  disputes            Dispute[]
+  employer            User          @relation("EmployerJobs", fields: [employerId], references: [id])
   ratings             Rating[]
   transactions        Transaction[]
-  disputes            Dispute[]
+}
+
+model Application {
+  id           String            @id @default(uuid())
+  jobId        String
+  workerId     String
+  coverMessage String?
+  status       ApplicationStatus @default(PENDING)
+  appliedAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  job          Job               @relation(fields: [jobId], references: [id])
+  worker       User              @relation("WorkerApplications", fields: [workerId], references: [id])
+}
+
+model Rating {
+  id         String   @id @default(uuid())
+  jobId      String
+  raterId    String
+  rateeId    String
+  stars      Int
+  reviewText String?
+  createdAt  DateTime @default(now())
+  job        Job      @relation(fields: [jobId], references: [id])
+  ratee      User     @relation("Ratee", fields: [rateeId], references: [id])
+  rater      User     @relation("Rater", fields: [raterId], references: [id])
+}
+
+model Transaction {
+  id            String            @id @default(uuid())
+  jobId         String
+  employerId    String
+  workerId      String
+  amount        Float
+  commission    Float
+  workerAmount  Float
+  paymentMethod PaymentMethod
+  paymentProof  String?
+  status        TransactionStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  employer      User              @relation("EmployerTransactions", fields: [employerId], references: [id])
+  job           Job               @relation(fields: [jobId], references: [id])
+  worker        User              @relation("WorkerTransactions", fields: [workerId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Dispute {
+  id          String        @id @default(uuid())
+  jobId       String
+  reporterId  String
+  description String
+  status      DisputeStatus @default(OPEN)
+  adminNotes  String?
+  createdAt   DateTime      @default(now())
+  job         Job           @relation(fields: [jobId], references: [id])
+  reporter    User          @relation("DisputeReporter", fields: [reporterId], references: [id])
+}
+
+enum Role {
+  EMPLOYER
+  WORKER
+  ADMIN
+}
+
+enum AvailabilityStatus {
+  AVAILABLE_NOW
+  AVAILABLE_THIS_WEEK
+  BUSY
 }
 
 enum PaymentMethod {
@@ -115,54 +196,11 @@ enum JobStatus {
   CANCELLED
 }
 
-model Application {
-  id           String            @id @default(uuid())
-  jobId        String
-  job          Job               @relation(fields: [jobId], references: [id])
-  workerId     String
-  worker       User              @relation("WorkerApplications", fields: [workerId], references: [id])
-  coverMessage String?
-  status       ApplicationStatus @default(PENDING)
-  appliedAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-}
-
 enum ApplicationStatus {
   PENDING
   ACCEPTED
   REJECTED
   JOB_COMPLETED
-}
-
-model Rating {
-  id         String   @id @default(uuid())
-  jobId      String
-  job        Job      @relation(fields: [jobId], references: [id])
-  raterId    String
-  rater      User     @relation("Rater", fields: [raterId], references: [id])
-  rateeId    String
-  ratee      User     @relation("Ratee", fields: [rateeId], references: [id])
-  stars      Int      // 1-5
-  reviewText String?
-  createdAt  DateTime @default(now())
-}
-
-model Transaction {
-  id             String            @id @default(uuid())
-  jobId          String
-  job            Job               @relation(fields: [jobId], references: [id])
-  employerId     String
-  employer       User              @relation("EmployerTransactions", fields: [employerId], references: [id])
-  workerId       String
-  worker         User              @relation("WorkerTransactions", fields: [workerId], references: [id])
-  amount         Float
-  commission     Float
-  workerAmount   Float
-  paymentMethod  PaymentMethod
-  paymentProof   String?           // image URL
-  status         TransactionStatus @default(PENDING)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
 }
 
 enum TransactionStatus {
@@ -173,28 +211,6 @@ enum TransactionStatus {
   COMPLETED
   RELEASED
   CANCELLED
-}
-
-model Notification {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  type      String
-  message   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-}
-
-model Dispute {
-  id          String        @id @default(uuid())
-  jobId       String
-  job         Job           @relation(fields: [jobId], references: [id])
-  reporterId  String
-  reporter    User          @relation("DisputeReporter", fields: [reporterId], references: [id])
-  description String
-  status      DisputeStatus @default(OPEN)
-  adminNotes  String?
-  createdAt   DateTime      @default(now())
 }
 
 enum DisputeStatus {

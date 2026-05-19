@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
-import { Clock, CheckCircle, XCircle, ArrowRight, PlayCircle, Upload, Loader, AlertCircle, DollarSign, Shield } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, ArrowRight, PlayCircle, Upload, Loader, AlertCircle, DollarSign, Shield, Star } from 'lucide-react';
 
 const STATUS_CONFIG = {
   PENDING:     { color: 'bg-yellow-100 text-yellow-800', label: 'Pending Payment', icon: Clock },
@@ -26,6 +26,11 @@ const EmployerTransactions = () => {
   const [fundModal, setFundModal] = useState(null);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
+
+  // Rating modal state
+  const [ratingModal, setRatingModal] = useState(null); // transaction id
+  const [ratingStars, setRatingStars] = useState(5);
+  const [ratingText, setRatingText] = useState('');
 
   useEffect(() => {
     fetchTransactions();
@@ -93,8 +98,29 @@ const EmployerTransactions = () => {
       await api.post(`/transactions/release/${txId}`);
       setActionSuccess('Payment released to worker!');
       fetchTransactions();
+      // Prompt for rating immediately after releasing
+      setRatingModal(txId);
     } catch (err) {
       setActionError(err.response?.data?.error || 'Release failed');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRateSubmit = async (e) => {
+    e.preventDefault();
+    setActionLoading('rating');
+    try {
+      await api.post(`/transactions/${ratingModal}/rate`, {
+        stars: ratingStars,
+        reviewText: ratingText
+      });
+      setActionSuccess('Worker endorsed successfully!');
+      setRatingModal(null);
+      setRatingStars(5);
+      setRatingText('');
+    } catch (err) {
+      setActionError(err.response?.data?.error || 'Failed to submit rating');
     } finally {
       setActionLoading(null);
     }
@@ -110,7 +136,7 @@ const EmployerTransactions = () => {
 
         {error && <div className="bg-red-50 text-red-700 p-4 rounded-xl mb-6 flex items-center"><AlertCircle size={18} className="mr-2 flex-shrink-0" /> {error}</div>}
         {actionSuccess && <div className="bg-green-50 text-green-700 p-4 rounded-xl mb-6 flex items-center"><CheckCircle size={18} className="mr-2 flex-shrink-0" /> {actionSuccess}</div>}
-        {actionError && !fundModal && <div className="bg-red-50 text-red-700 p-4 rounded-xl mb-6 flex items-center"><AlertCircle size={18} className="mr-2 flex-shrink-0" /> {actionError}</div>}
+        {actionError && !fundModal && !ratingModal && <div className="bg-red-50 text-red-700 p-4 rounded-xl mb-6 flex items-center"><AlertCircle size={18} className="mr-2 flex-shrink-0" /> {actionError}</div>}
 
         {transactions.length === 0 ? (
           <div className="bg-white p-12 rounded-xl shadow-sm border border-gray-100 text-center">
@@ -182,7 +208,15 @@ const EmployerTransactions = () => {
                         </button>
                       )}
                       {tx.status === 'RELEASED' && (
-                        <span className="flex items-center text-emerald-600 font-medium text-sm"><CheckCircle size={16} className="mr-1.5" /> Payment Released</span>
+                        <div className="flex items-center gap-4 w-full sm:w-auto">
+                          <span className="flex items-center text-emerald-600 font-medium text-sm"><CheckCircle size={16} className="mr-1.5" /> Payment Released</span>
+                          <button
+                            onClick={() => { setRatingModal(tx.id); setActionError(''); }}
+                            className="flex items-center bg-accent-600 hover:bg-accent-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all shadow-sm"
+                          >
+                            <Star size={14} className="mr-1.5" /> Rate Worker
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -246,6 +280,66 @@ const EmployerTransactions = () => {
                   {actionLoading === fundModal ? <Loader className="animate-spin" size={18} /> : <>Submit <ArrowRight size={16} className="ml-1.5" /></>}
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Rating Modal */}
+        {ratingModal && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setRatingModal(null)}>
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+              <h3 className="text-xl font-bold text-gray-900 mb-1">Endorse Worker</h3>
+              <p className="text-sm text-gray-500 mb-6">Write a short specific endorsement (max 120 characters).</p>
+
+              {actionError && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4">{actionError}</div>}
+
+              <form onSubmit={handleRateSubmit}>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <button
+                        type="button"
+                        key={star}
+                        onClick={() => setRatingStars(star)}
+                        className={`p-2 rounded-full ${ratingStars >= star ? 'text-yellow-400' : 'text-gray-300'}`}
+                      >
+                        <Star fill="currentColor" size={28} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Endorsement (Optional)</label>
+                  <textarea
+                    maxLength={120}
+                    value={ratingText}
+                    onChange={e => setRatingText(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none resize-none"
+                    rows="3"
+                    placeholder="E.g., Great attention to detail and very punctual."
+                  ></textarea>
+                  <div className="text-right text-xs text-gray-400 mt-1">{ratingText.length}/120</div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setRatingModal(null)}
+                    className="flex-1 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    Skip
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={actionLoading === 'rating'}
+                    className="flex-1 py-2.5 bg-accent-600 text-white rounded-lg font-medium hover:bg-accent-700 transition-colors disabled:opacity-50 flex items-center justify-center"
+                  >
+                    {actionLoading === 'rating' ? <Loader className="animate-spin" size={18} /> : 'Submit Endorsement'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

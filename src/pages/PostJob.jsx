@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Briefcase, FileText, ListChecks, DollarSign, CheckCircle, ArrowRight, ArrowLeft, Zap } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -22,13 +22,13 @@ export default function PostJob() {
     postJob({
       ...formData,
       type: jobType,
-      companyLogo: '🏢',
+      companyLogo: 'ðŸ¢',
       company: 'Your Company',
       skills: formData.skills.split(',').map(s => s.trim()).filter(Boolean),
       requirements: formData.requirements.split('\n').filter(Boolean),
       benefits: ['Flexible schedule'],
       urgency: 'normal',
-      distance: '—',
+      distance: 'â€”',
       verified: true,
     });
     setStep(5); // success state
@@ -101,7 +101,7 @@ export default function PostJob() {
             </div>
             <div className="form-group">
               <label>Location *</label>
-              <input className="input-field" placeholder="e.g. Brooklyn, NY or Remote" value={formData.location} onChange={e => update('location', e.target.value)} />
+              <input className="input-field" placeholder="e.g. Dar es Salaam or Dodoma" value={formData.location} onChange={e => update('location', e.target.value)} />
             </div>
             <div className="form-actions">
               <div></div>
@@ -172,17 +172,17 @@ export default function PostJob() {
           <div className="form-step card animate-fade-in-up">
             <h2><CheckCircle size={20} /> Review & Post</h2>
             <div className="review-grid">
-              <div className="review-item"><span className="review-label">Title</span><span className="review-value">{formData.title || '—'}</span></div>
-              <div className="review-item"><span className="review-label">Type</span><span className="review-value">{jobType === 'gig' ? '⚡ Quick Gig' : '💼 Full-Time'}</span></div>
-              <div className="review-item"><span className="review-label">Category</span><span className="review-value">{formData.category || '—'}</span></div>
-              <div className="review-item"><span className="review-label">Location</span><span className="review-value">{formData.location || '—'}</span></div>
-              <div className="review-item"><span className="review-label">Pay</span><span className="review-value">${formData.pay} {formData.payType}</span></div>
-              <div className="review-item full"><span className="review-label">Description</span><span className="review-value">{formData.description || '—'}</span></div>
-              <div className="review-item full"><span className="review-label">Skills</span><span className="review-value">{formData.skills || '—'}</span></div>
+              <div className="review-item"><span className="review-label">Title</span><span className="review-value">{formData.title || 'â€”'}</span></div>
+              <div className="review-item"><span className="review-label">Type</span><span className="review-value">{jobType === 'gig' ? 'âš¡ Quick Gig' : 'ðŸ’¼ Full-Time'}</span></div>
+              <div className="review-item"><span className="review-label">Category</span><span className="review-value">{formData.category || 'â€”'}</span></div>
+              <div className="review-item"><span className="review-label">Location</span><span className="review-value">{formData.location || 'â€”'}</span></div>
+              <div className="review-item"><span className="review-label">Pay</span><span className="review-value">TSh {Number(formData.pay).toLocaleString()} {formData.payType}</span></div>
+              <div className="review-item full"><span className="review-label">Description</span><span className="review-value">{formData.description || 'â€”'}</span></div>
+              <div className="review-item full"><span className="review-label">Skills</span><span className="review-value">{formData.skills || 'â€”'}</span></div>
             </div>
             <div className="form-actions">
               <button className="btn btn-secondary" onClick={() => setStep(3)}><ArrowLeft size={16} /> Back</button>
-              <button className="btn btn-primary btn-lg" onClick={handleSubmit}>🚀 Post Job</button>
+              <button className="btn btn-primary btn-lg" onClick={handleSubmit}>ðŸš€ Post Job</button>
             </div>
           </div>
         )}
@@ -190,7 +190,7 @@ export default function PostJob() {
         {/* Success */}
         {step === 5 && (
           <div className="success-card card animate-scale-in">
-            <div className="success-icon">🎉</div>
+            <div className="success-icon">ðŸŽ‰</div>
             <h2>Job Posted Successfully!</h2>
             <p>Your job is now live. Qualified workers will start applying within minutes.</p>
             <div className="success-actions">
@@ -203,3 +203,4 @@ export default function PostJob() {
     </div>
   );
 }
+

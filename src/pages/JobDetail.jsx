@@ -14,10 +14,10 @@ export default function JobDetail() {
   const similarJobs = jobs.filter(j => j.id !== job.id && j.category === job.category).slice(0, 3);
 
   const formatPay = () => {
-    if (job.payType === 'hourly') return `$${job.pay}/hr`;
-    if (job.payType === 'fixed') return `$${job.pay} fixed`;
-    if (job.payType === 'yearly') return `$${(job.pay / 1000).toFixed(0)}k/year`;
-    return `$${job.pay}`;
+    if (job.payType === 'hourly') return `TSh ${Number(job.pay).toLocaleString()}/hr`;
+    if (job.payType === 'fixed') return `TSh ${Number(job.pay).toLocaleString()} fixed`;
+    if (job.payType === 'yearly') return `TSh ${(job.pay / 1000).toFixed(0)}k/year`;
+    return `TSh ${Number(job.pay).toLocaleString()}`;
   };
 
   return (

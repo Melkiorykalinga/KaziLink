@@ -33,13 +33,13 @@ async function runTests() {
     // SETUP
     // ----------------------------------------------------
     const tstamp = Date.now();
-    const emp = await register({ email: `emp_${tstamp}@test.com`, password: 'pass123', fullName: 'Employer Test', phone: `07${tstamp.toString().slice(-8)}`, locationCity: 'Nairobi', role: 'EMPLOYER' });
-    const wrk = await register({ email: `wrk_${tstamp}@test.com`, password: 'pass123', fullName: 'Worker Test', phone: `07${(tstamp+1).toString().slice(-8)}`, locationCity: 'Nairobi', role: 'WORKER' });
+    const emp = await register({ email: `emp_${tstamp}@test.com`, password: 'pass123', fullName: 'Employer Test', phone: `07${tstamp.toString().slice(-8)}`, locationCity: 'Dar es Salaam', role: 'EMPLOYER' });
+    const wrk = await register({ email: `wrk_${tstamp}@test.com`, password: 'pass123', fullName: 'Worker Test', phone: `07${(tstamp+1).toString().slice(-8)}`, locationCity: 'Dar es Salaam', role: 'WORKER' });
     const adminToken = await login('admin@kazilink.com', 'admin123');
 
     // Create job + application
     const jobRes = await axios.post(`${API}/jobs`, {
-      title: 'QA Test Job', description: 'This is a valid description.', category: 'Software', workersNeeded: 1, jobDate: '2026-05-15', startTime: '08:00', durationHours: 4, locationAddress: 'Nairobi CBD', payPerWorker: 1000, paymentMethod: 'MPESA', applicationDeadline: '2026-05-10'
+      title: 'QA Test Job', description: 'This is a valid description.', category: 'Software', workersNeeded: 1, jobDate: '2026-05-15', startTime: '08:00', durationHours: 4, locationAddress: 'Dar es Salaam CBD', payPerWorker: 1000, paymentMethod: 'MPESA', applicationDeadline: '2026-05-10'
     }, auth(emp.token));
     const jobId = jobRes.data.id;
 
