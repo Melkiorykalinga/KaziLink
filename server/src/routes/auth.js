@@ -56,13 +56,20 @@ router.post('/register', validate(userRegisterSchema), async (req, res) => {
     // Usually we would send verification email here
     
     // Auto-login after registration
-    const token = jwt.sign(
+    const accessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '1d' } // Session expiry logic
+      process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET,
+      { expiresIn: '30m' }
+    );
+    const refreshToken = jwt.sign(
+      { id: user.id },
+      process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET,
+      { expiresIn: '2h' }
     );
 
-    res.status(201).json({ token, user: { id: user.id, email: user.email, role: user.role, fullName: user.fullName } });
+    await prisma.user.update({ where: { id: user.id }, data: { refreshToken, lastActiveAt: new Date() } });
+
+    res.status(201).json({ token: accessToken, refreshToken, user: { id: user.id, email: user.email, role: user.role, fullName: user.fullName } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Registration failed' });
@@ -88,13 +95,20 @@ router.post('/login', validate(userLoginSchema), async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const token = jwt.sign(
+    const accessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '1d' }
+      process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET,
+      { expiresIn: '30m' }
+    );
+    const refreshToken = jwt.sign(
+      { id: user.id },
+      process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET,
+      { expiresIn: '2h' }
     );
 
-    res.json({ token, user: { id: user.id, email: user.email, role: user.role, fullName: user.fullName } });
+    await prisma.user.update({ where: { id: user.id }, data: { refreshToken, lastActiveAt: new Date() } });
+
+    res.json({ token: accessToken, refreshToken, user: { id: user.id, email: user.email, role: user.role, fullName: user.fullName } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Login failed' });
@@ -118,6 +132,65 @@ router.get('/me', authenticate, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error retrieving user data' });
+  }
+});
+
+// Verify Token
+router.get('/verify', authenticate, (req, res) => {
+  res.status(200).json({ valid: true });
+});
+
+// Refresh Token
+router.post('/refresh', async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) return res.status(401).json({ error: 'Refresh token required' });
+
+  try {
+    const payload = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET);
+    const user = await prisma.user.findUnique({ where: { id: payload.id } });
+    
+    if (!user || user.refreshToken !== refreshToken) {
+      return res.status(401).json({ error: 'Invalid refresh token' });
+    }
+
+    // Check last active time
+    if (user.lastActiveAt) {
+      const diffMs = new Date() - new Date(user.lastActiveAt);
+      const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins > 30) {
+        return res.status(401).json({ error: 'Idle timeout exceeded' });
+      }
+    }
+
+    // Generate new access token
+    const accessToken = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET,
+      { expiresIn: '30m' }
+    );
+
+    // Update last active
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastActiveAt: new Date() }
+    });
+
+    res.json({ token: accessToken });
+  } catch (err) {
+    return res.status(401).json({ error: 'Token expired or invalid' });
+  }
+});
+
+// Logout
+router.post('/logout', authenticate, async (req, res) => {
+  try {
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { refreshToken: null }
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Logout failed' });
   }
 });
 
