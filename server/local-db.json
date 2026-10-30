@@ -3,17 +3,17 @@
     {
       "id": "adm-main-001",
       "email": "admin@kazilink.com",
-      "phone": "0700000000",
+      "phone": "0682847653",
       "passwordHash": "$2b$10$mLI1mKz61TzkaR2nb92Y6Oqr3zPj28epwLtEQDiEQYLOpwKJx6qFu",
       "fullName": "KaziLink Admin",
       "role": "ADMIN",
       "locationCity": "Dar es Salaam",
       "isVerified": true,
       "isActive": true,
-      "lastActiveAt": "2026-10-30T08:37:35.121Z",
-      "refreshToken": null,
+      "lastActiveAt": "2026-10-30T08:48:59.441Z",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFkbS1tYWluLTAwMSIsImlhdCI6MTc5MzM1MDEzOSwiZXhwIjoxNzkzMzU3MzM5fQ.hR8_JmpuA4fCZgZ8mLSdZGxHovGprOiHt8qOhV-3nB0",
       "createdAt": "2026-10-30T08:37:35.121Z",
-      "updatedAt": "2026-10-30T08:37:35.320Z"
+      "updatedAt": "2026-10-30T08:48:59.441Z"
     }
   ],
   "employerProfiles": [],

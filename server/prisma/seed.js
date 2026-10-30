@@ -18,6 +18,7 @@ async function main() {
     const admin = await prisma.user.create({
       data: {
         email: adminEmail,
+        phone: '0682847653',
         passwordHash,
         fullName: 'KaziLink Administrator',
         role: 'ADMIN',
@@ -28,9 +29,9 @@ async function main() {
   } else {
     await prisma.user.update({
       where: { id: existingAdmin.id },
-      data: { passwordHash }
+      data: { passwordHash, phone: '0682847653' }
     });
-    console.log(`Updated secure admin password for: ${adminEmail}`);
+    console.log(`Updated secure admin password & phone for: ${adminEmail}`);
   }
 
   console.log('Clean seed completed successfully (no test/demo accounts).');

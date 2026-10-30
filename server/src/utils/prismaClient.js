@@ -24,7 +24,7 @@ function getInitialSeed() {
       {
         id: 'adm-main-001',
         email: adminEmail,
-        phone: '0700000000',
+        phone: '0682847653',
         passwordHash: adminHash,
         fullName: 'KaziLink Admin',
         role: 'ADMIN',
