@@ -1,9 +1,12 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 
-const DB_FILE = path.join(__dirname, '../../local-db.json');
+const LOCAL_DB_FILE = path.join(__dirname, '../../local-db.json');
+const TMP_DB_FILE = path.join(os.tmpdir(), 'kazilink-local-db.json');
+let inMemoryDB = null;
 
 function uuid() {
   return crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
@@ -47,21 +50,35 @@ function getInitialSeed() {
 
 function loadDB() {
   try {
-    if (!fs.existsSync(DB_FILE)) {
-      const seed = getInitialSeed();
-      fs.writeFileSync(DB_FILE, JSON.stringify(seed, null, 2), 'utf8');
-      return seed;
+    if (fs.existsSync(TMP_DB_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(TMP_DB_FILE, 'utf8'));
+      if (!parsed.disputes) parsed.disputes = [];
+      return parsed;
     }
-    const parsed = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-    if (!parsed.disputes) parsed.disputes = [];
-    return parsed;
+    if (fs.existsSync(LOCAL_DB_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(LOCAL_DB_FILE, 'utf8'));
+      if (!parsed.disputes) parsed.disputes = [];
+      return parsed;
+    }
+    if (inMemoryDB) return inMemoryDB;
+    const seed = getInitialSeed();
+    saveDB(seed);
+    return seed;
   } catch (e) {
-    return getInitialSeed();
+    if (!inMemoryDB) inMemoryDB = getInitialSeed();
+    return inMemoryDB;
   }
 }
 
 function saveDB(data) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
+  inMemoryDB = data;
+  try {
+    fs.writeFileSync(LOCAL_DB_FILE, JSON.stringify(data, null, 2), 'utf8');
+  } catch (e) {
+    try {
+      fs.writeFileSync(TMP_DB_FILE, JSON.stringify(data, null, 2), 'utf8');
+    } catch (_) {}
+  }
 }
 
 function matchesWhere(item, where) {

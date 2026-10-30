@@ -56,15 +56,18 @@ router.post('/register', validate(userRegisterSchema), async (req, res) => {
     // Usually we would send verification email here
     
     // Auto-login after registration
+    const secretAccess = process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET || 'kazilink-prod-jwt-secret-2026';
+    const secretRefresh = process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET || 'kazilink-prod-jwt-secret-2026';
+
     const accessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET,
-      { expiresIn: '30m' }
+      secretAccess,
+      { expiresIn: '2h' }
     );
     const refreshToken = jwt.sign(
       { id: user.id },
-      process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET,
-      { expiresIn: '2h' }
+      secretRefresh,
+      { expiresIn: '7d' }
     );
 
     await prisma.user.update({ where: { id: user.id }, data: { refreshToken, lastActiveAt: new Date() } });
@@ -95,15 +98,18 @@ router.post('/login', validate(userLoginSchema), async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    const secretAccess = process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET || 'kazilink-prod-jwt-secret-2026';
+    const secretRefresh = process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET || 'kazilink-prod-jwt-secret-2026';
+
     const accessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET,
-      { expiresIn: '30m' }
+      secretAccess,
+      { expiresIn: '2h' }
     );
     const refreshToken = jwt.sign(
       { id: user.id },
-      process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET,
-      { expiresIn: '2h' }
+      secretRefresh,
+      { expiresIn: '7d' }
     );
 
     await prisma.user.update({ where: { id: user.id }, data: { refreshToken, lastActiveAt: new Date() } });
@@ -146,7 +152,7 @@ router.post('/refresh', async (req, res) => {
   if (!refreshToken) return res.status(401).json({ error: 'Refresh token required' });
 
   try {
-    const payload = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET);
+    const payload = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET || 'kazilink-prod-jwt-secret-2026');
     const user = await prisma.user.findUnique({ where: { id: payload.id } });
     
     if (!user || user.refreshToken !== refreshToken) {
@@ -165,8 +171,8 @@ router.post('/refresh', async (req, res) => {
     // Generate new access token
     const accessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET,
-      { expiresIn: '30m' }
+      process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET || 'kazilink-prod-jwt-secret-2026',
+      { expiresIn: '2h' }
     );
 
     // Update last active

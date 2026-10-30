@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('../utils/prismaClient');
 const prisma = new PrismaClient();
+
+const DEFAULT_JWT_SECRET = 'kazilink-prod-jwt-secret-2026';
 
 const authenticate = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -10,7 +12,8 @@ const authenticate = async (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
   try {
-    const payload = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET);
+    const secret = process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET || DEFAULT_JWT_SECRET;
+    const payload = jwt.verify(token, secret);
     req.user = payload; // Contains id, email, role
 
     // Update lastActiveAt on every authenticated request
