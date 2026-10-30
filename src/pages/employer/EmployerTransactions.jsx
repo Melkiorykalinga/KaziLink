@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import api from '../../services/api';
-import { Clock, CheckCircle, XCircle, PlayCircle, Loader, AlertCircle, DollarSign, Shield, Star, Phone } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, PlayCircle, Loader, AlertCircle, DollarSign, Shield, Star, Phone, MessageSquareWarning } from 'lucide-react';
 
 const STATUS_CONFIG = {
   PENDING:     { color: 'bg-indigo-100 text-indigo-800', labelEn: 'Worker Accepted', labelSw: 'Mfanyakazi Amekubaliwa', icon: Clock },
@@ -26,6 +26,10 @@ const EmployerTransactions = () => {
   const [ratingModal, setRatingModal] = useState(null);
   const [ratingStars, setRatingStars] = useState(5);
   const [ratingText, setRatingText] = useState('');
+
+  // Private Dispute / Admin Feedback modal state
+  const [disputeModal, setDisputeModal] = useState(null); // transaction object
+  const [disputeText, setDisputeText] = useState('');
 
   useEffect(() => {
     fetchTransactions();
@@ -80,6 +84,29 @@ const EmployerTransactions = () => {
     }
   };
 
+  const handleDisputeSubmit = async (e) => {
+    e.preventDefault();
+    if (!disputeText.trim()) return;
+    setActionLoading('dispute');
+    setActionError('');
+    try {
+      await api.post(`/transactions/${disputeModal.id}/dispute`, {
+        description: disputeText.trim()
+      });
+      setActionSuccess(
+        lang === 'sw'
+          ? '✓ Maoni/Malalamiko yako yametumwa kwa Admin pekee! Admin atawasiliana nawe.'
+          : '✓ Your private report has been sent to the Admin only! Admin will follow up directly.'
+      );
+      setDisputeModal(null);
+      setDisputeText('');
+    } catch (err) {
+      setActionError(err.response?.data?.error || 'Failed to send report');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   if (loading) return <div className="min-h-[60vh] flex items-center justify-center text-gray-400"><Loader className="animate-spin mr-2" /> Loading...</div>;
 
   return (
@@ -95,7 +122,7 @@ const EmployerTransactions = () => {
 
         {error && <div className="bg-red-50 text-red-700 p-4 rounded-xl mb-6 flex items-center"><AlertCircle size={18} className="mr-2 flex-shrink-0" /> {error}</div>}
         {actionSuccess && <div className="bg-green-50 text-green-700 p-4 rounded-xl mb-6 flex items-center"><CheckCircle size={18} className="mr-2 flex-shrink-0" /> {actionSuccess}</div>}
-        {actionError && !ratingModal && <div className="bg-red-50 text-red-700 p-4 rounded-xl mb-6 flex items-center"><AlertCircle size={18} className="mr-2 flex-shrink-0" /> {actionError}</div>}
+        {actionError && !ratingModal && !disputeModal && <div className="bg-red-50 text-red-700 p-4 rounded-xl mb-6 flex items-center"><AlertCircle size={18} className="mr-2 flex-shrink-0" /> {actionError}</div>}
 
         {transactions.length === 0 ? (
           <div className="bg-white p-12 rounded-xl shadow-sm border border-gray-100 text-center">
@@ -146,53 +173,65 @@ const EmployerTransactions = () => {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex flex-wrap items-center gap-3">
-                      {(tx.status === 'FUNDED' || tx.status === 'PENDING') && (
-                        <p className="text-sm text-indigo-600 flex items-center">
-                          <Clock size={15} className="mr-1.5" /> {t('etx_waitingWorkerStart')}
-                        </p>
-                      )}
-                      {tx.status === 'IN_PROGRESS' && (
-                        <p className="text-sm text-purple-600 flex items-center">
-                          <PlayCircle size={15} className="mr-1.5" /> {t('etx_jobInProgress')}
-                        </p>
-                      )}
-                      {tx.status === 'COMPLETED' && (
-                        <button
-                          onClick={() => handleMarkPaid(tx.id)}
-                          disabled={actionLoading === tx.id}
-                          className="flex items-center bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-semibold transition-all active:scale-95 shadow-sm disabled:opacity-50 cursor-pointer"
-                        >
-                          {actionLoading === tx.id ? <Loader className="animate-spin mr-2" size={16} /> : <CheckCircle size={16} className="mr-2" />}
-                          {t('etx_btnMarkPaid')} (TSh {tx.amount?.toLocaleString()})
-                        </button>
-                      )}
-                      {tx.status === 'VERIFYING' && (
-                        <div className="flex flex-wrap items-center justify-between gap-4 w-full">
-                          <span className="flex items-center text-blue-700 font-medium text-sm">
-                            <Clock size={16} className="mr-1.5" /> {t('etx_waitingWorkerConfirm')}
-                          </span>
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-gray-100">
+                      <div className="flex flex-wrap items-center gap-3">
+                        {(tx.status === 'FUNDED' || tx.status === 'PENDING') && (
+                          <p className="text-sm text-indigo-600 flex items-center">
+                            <Clock size={15} className="mr-1.5" /> {t('etx_waitingWorkerStart')}
+                          </p>
+                        )}
+                        {tx.status === 'IN_PROGRESS' && (
+                          <p className="text-sm text-purple-600 flex items-center">
+                            <PlayCircle size={15} className="mr-1.5" /> {t('etx_jobInProgress')}
+                          </p>
+                        )}
+                        {tx.status === 'COMPLETED' && (
                           <button
-                            onClick={() => { setRatingModal(tx.id); setActionError(''); }}
-                            className="flex items-center bg-accent-600 hover:bg-accent-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all shadow-sm cursor-pointer"
+                            onClick={() => handleMarkPaid(tx.id)}
+                            disabled={actionLoading === tx.id}
+                            className="flex items-center bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-semibold transition-all active:scale-95 shadow-sm disabled:opacity-50 cursor-pointer"
                           >
-                            <Star size={14} className="mr-1.5" /> {t('etx_btnRateWorker')}
+                            {actionLoading === tx.id ? <Loader className="animate-spin mr-2" size={16} /> : <CheckCircle size={16} className="mr-2" />}
+                            {t('etx_btnMarkPaid')} (TSh {tx.amount?.toLocaleString()})
                           </button>
-                        </div>
-                      )}
-                      {tx.status === 'RELEASED' && (
-                        <div className="flex flex-wrap items-center justify-between gap-4 w-full">
-                          <span className="flex items-center text-emerald-600 font-semibold text-sm">
-                            <CheckCircle size={16} className="mr-1.5" /> {t('etx_paymentConfirmed')}
-                          </span>
-                          <button
-                            onClick={() => { setRatingModal(tx.id); setActionError(''); }}
-                            className="flex items-center bg-accent-600 hover:bg-accent-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all shadow-sm cursor-pointer"
-                          >
-                            <Star size={14} className="mr-1.5" /> {t('etx_btnRateWorker')}
-                          </button>
-                        </div>
-                      )}
+                        )}
+                        {tx.status === 'VERIFYING' && (
+                          <>
+                            <span className="flex items-center text-blue-700 font-medium text-sm">
+                              <Clock size={16} className="mr-1.5" /> {t('etx_waitingWorkerConfirm')}
+                            </span>
+                            <button
+                              onClick={() => { setRatingModal(tx.id); setActionError(''); }}
+                              className="flex items-center bg-accent-600 hover:bg-accent-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all shadow-sm cursor-pointer"
+                            >
+                              <Star size={14} className="mr-1.5" /> {t('etx_btnRateWorker')}
+                            </button>
+                          </>
+                        )}
+                        {tx.status === 'RELEASED' && (
+                          <>
+                            <span className="flex items-center text-emerald-600 font-semibold text-sm">
+                              <CheckCircle size={16} className="mr-1.5" /> {t('etx_paymentConfirmed')}
+                            </span>
+                            <button
+                              onClick={() => { setRatingModal(tx.id); setActionError(''); }}
+                              className="flex items-center bg-accent-600 hover:bg-accent-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all shadow-sm cursor-pointer"
+                            >
+                              <Star size={14} className="mr-1.5" /> {t('etx_btnRateWorker')}
+                            </button>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Private Report / Complaint to Admin Button */}
+                      <button
+                        type="button"
+                        onClick={() => { setDisputeModal(tx); setDisputeText(''); setActionError(''); }}
+                        className="inline-flex items-center text-xs font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-2 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <MessageSquareWarning size={14} className="mr-1.5" />
+                        {lang === 'sw' ? 'Toa Maoni / Lalamika kwa Admin' : 'Report Issue to Admin'}
+                      </button>
                     </div>
                   </div>
 
@@ -210,6 +249,62 @@ const EmployerTransactions = () => {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Private Dispute / Report to Admin Modal */}
+        {disputeModal && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setDisputeModal(null)}>
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center gap-2 text-red-600 font-bold text-lg mb-1">
+                <MessageSquareWarning size={22} />
+                <h3>{lang === 'sw' ? 'Tuma Maoni au Lalamiko kwa Admin' : 'Send Private Report to Admin'}</h3>
+              </div>
+              <p className="text-xs text-gray-500 mb-4">
+                {lang === 'sw'
+                  ? '🔒 Ujumbe huu utaonekana na ADMIN PEKEE. Eleza kama kuna changamoto kwenye kazi au sababu ya kutokamilisha malipo ili Admin awasiliane nanyi.'
+                  : '🔒 This message is visible ONLY to the Admin. Describe any issue with the work or payment so Admin can follow up directly.'}
+              </p>
+
+              <div className="bg-gray-50 rounded-lg p-3 mb-4 text-xs text-gray-700 border border-gray-200">
+                <div><strong>{lang === 'sw' ? 'Kazi' : 'Job'}:</strong> {disputeModal.job?.title}</div>
+                <div><strong>{lang === 'sw' ? 'Mfanyakazi' : 'Worker'}:</strong> {disputeModal.worker?.fullName}</div>
+              </div>
+
+              {actionError && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4">{actionError}</div>}
+
+              <form onSubmit={handleDisputeSubmit}>
+                <textarea
+                  required
+                  rows={4}
+                  value={disputeText}
+                  onChange={e => setDisputeText(e.target.value)}
+                  placeholder={
+                    lang === 'sw'
+                      ? 'Andika hapa maoni au sababu ya kulalamika (mfano: Mfanyakazi hajamaliza kazi vizuri au amechelewa sana...)'
+                      : 'Describe what happened or why payment is withheld...'
+                  }
+                  className="w-full border border-gray-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none resize-none mb-4"
+                />
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setDisputeModal(null)}
+                    className="flex-1 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    {lang === 'sw' ? 'Ghairi' : 'Cancel'}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={actionLoading === 'dispute'}
+                    className="flex-1 py-2.5 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center cursor-pointer"
+                  >
+                    {actionLoading === 'dispute' ? <Loader className="animate-spin" size={18} /> : (lang === 'sw' ? 'Tuma kwa Admin' : 'Send to Admin')}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 

@@ -9,29 +9,21 @@ function uuid() {
   return crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
 }
 
+// Clean production-ready seed: ONLY the Admin user, zero fake/test jobs or demo users
 function getInitialSeed() {
   const now = new Date().toISOString();
-  const adminHash = bcrypt.hashSync('admin123', 10);
-  const empHash = bcrypt.hashSync('employer123', 10);
-  const workerHash = bcrypt.hashSync('worker123', 10);
-
-  const empId = 'emp-default-001';
-  const workerId = 'wrk-default-001';
-  const adminId = 'adm-default-001';
-  const workerProfileId = 'wp-default-001';
-  const empProfileId = 'ep-default-001';
-
-  const job1Id = 'job-sample-001';
-  const job2Id = 'job-sample-002';
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@kazilink.com';
+  const adminPass = process.env.ADMIN_PASSWORD || 'KaziLink#Melki$2026!';
+  const adminHash = bcrypt.hashSync(adminPass, 10);
 
   return {
     users: [
       {
-        id: adminId,
-        email: 'admin@kazilink.com',
+        id: 'adm-main-001',
+        email: adminEmail,
         phone: '0700000000',
         passwordHash: adminHash,
-        fullName: 'System Admin',
+        fullName: 'KaziLink Admin',
         role: 'ADMIN',
         locationCity: 'Dar es Salaam',
         isVerified: true,
@@ -40,135 +32,16 @@ function getInitialSeed() {
         refreshToken: null,
         createdAt: now,
         updatedAt: now
-      },
-      {
-        id: empId,
-        email: 'employer@kazilink.com',
-        phone: '0755123456',
-        passwordHash: empHash,
-        fullName: 'Melki Logistics & Builders',
-        role: 'EMPLOYER',
-        locationCity: 'Dar es Salaam',
-        isVerified: true,
-        isActive: true,
-        lastActiveAt: now,
-        refreshToken: null,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: workerId,
-        email: 'worker@kazilink.com',
-        phone: '0788654321',
-        passwordHash: workerHash,
-        fullName: 'Juma Fundi',
-        role: 'WORKER',
-        locationCity: 'Dar es Salaam',
-        isVerified: true,
-        isActive: true,
-        lastActiveAt: now,
-        refreshToken: null,
-        createdAt: now,
-        updatedAt: now
       }
     ],
-    employerProfiles: [
-      {
-        id: empProfileId,
-        userId: empId,
-        businessName: 'Melki Logistics & Builders',
-        businessDescription: 'Construction, moving, and warehouse services in Tanzania.',
-        industry: 'Construction & Logistics',
-        logoUrl: null,
-        totalJobsPosted: 2,
-        createdAt: now,
-        updatedAt: now
-      }
-    ],
-    workerProfiles: [
-      {
-        id: workerProfileId,
-        userId: workerId,
-        bio: 'Mchapakazi hodari wa ujenzi, kupakia mizigo, na usafi.',
-        skills: ['Ujenzi', 'Kupakia Mizigo', 'Usafi'],
-        availabilityDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-        availabilityTimes: '07:00 - 18:00',
-        preferredRadiusKm: 15,
-        averageRating: 4.9,
-        totalJobsCompleted: 12,
-        totalEarned: 340000,
-        availabilityStatus: 'AVAILABLE_NOW',
-        createdAt: now,
-        updatedAt: now
-      }
-    ],
-    workerSkills: [
-      {
-        id: 'sk-001',
-        workerProfileId,
-        name: 'Kupakia na Kupanga Mizigo (Warehousing)',
-        isVerified: true,
-        createdAt: now
-      },
-      {
-        id: 'sk-002',
-        workerProfileId,
-        name: 'Ujenzi & Ukarabati (Construction)',
-        isVerified: true,
-        createdAt: now
-      }
-    ],
-    jobs: [
-      {
-        id: job1Id,
-        employerId: empId,
-        title: 'Kupakia na Kupanga Mizigo Godown (Warehouse Assistant)',
-        description: 'Tunahitaji vijana wachapakazi wa kupanga maboksi kwenye godown letu Mikocheni kwa siku moja. Chakula cha mchana kinatolewa na malipo ni papo hapo kazi ikiisha.',
-        category: 'Warehousing',
-        workersNeeded: 3,
-        workersAccepted: 0,
-        jobDate: now,
-        startTime: '08:00',
-        durationHours: 8,
-        locationAddress: 'Mikocheni B, Dar es Salaam',
-        locationLat: -6.764,
-        locationLng: 39.248,
-        payPerWorker: 30000,
-        totalPayWithFee: 30000,
-        paymentMethod: 'MPESA',
-        applicationDeadline: new Date(Date.now() + 7 * 86400000).toISOString(),
-        specialRequirements: 'Uwe na kitambulisho (NIDA au Kura) na viatu imara.',
-        status: 'ACTIVE',
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: job2Id,
-        employerId: empId,
-        title: 'Usafi wa Ofisi Mpya (Office Deep Cleaning)',
-        description: 'Kufanya usafi wa vioo, sakafu na kupanga samani kwenye ofisi mpya iliyopo Posta Mpya.',
-        category: 'Cleaning',
-        workersNeeded: 2,
-        workersAccepted: 0,
-        jobDate: now,
-        startTime: '09:00',
-        durationHours: 6,
-        locationAddress: 'Posta Mpya, Dar es Salaam',
-        locationLat: -6.816,
-        locationLng: 39.289,
-        payPerWorker: 25000,
-        totalPayWithFee: 25000,
-        paymentMethod: 'MPESA',
-        applicationDeadline: new Date(Date.now() + 7 * 86400000).toISOString(),
-        specialRequirements: 'Uzoefu wa usafi wa maofisi.',
-        status: 'ACTIVE',
-        createdAt: now,
-        updatedAt: now
-      }
-    ],
+    employerProfiles: [],
+    workerProfiles: [],
+    workerSkills: [],
+    jobs: [],
     applications: [],
     transactions: [],
-    ratings: []
+    ratings: [],
+    disputes: []
   };
 }
 
@@ -179,7 +52,9 @@ function loadDB() {
       fs.writeFileSync(DB_FILE, JSON.stringify(seed, null, 2), 'utf8');
       return seed;
     }
-    return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+    const parsed = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+    if (!parsed.disputes) parsed.disputes = [];
+    return parsed;
   } catch (e) {
     return getInitialSeed();
   }
@@ -211,7 +86,7 @@ function matchesWhere(item, where) {
   return true;
 }
 
-function attachUserRelations(db, user, includeOrSelect) {
+function attachUserRelations(db, user) {
   if (!user) return null;
   const copy = { ...user };
   const ep = db.employerProfiles.find(p => p.userId === user.id) || null;
@@ -263,9 +138,41 @@ function attachTxRelations(db, tx, include) {
   return copy;
 }
 
+function attachDisputeRelations(db, d) {
+  if (!d) return null;
+  const copy = { ...d };
+  const reporter = db.users.find(u => u.id === d.reporterId) || null;
+  const job = db.jobs.find(j => j.id === d.jobId) || null;
+  copy.reporter = reporter
+    ? { id: reporter.id, fullName: reporter.fullName, email: reporter.email, phone: reporter.phone, role: reporter.role }
+    : null;
+  if (job) {
+    const employer = db.users.find(u => u.id === job.employerId) || null;
+    const jobTxs = db.transactions
+      .filter(t => t.jobId === job.id)
+      .map(t => {
+        const w = db.users.find(u => u.id === t.workerId) || null;
+        return {
+          id: t.id,
+          status: t.status,
+          amount: t.amount,
+          worker: w ? { id: w.id, fullName: w.fullName, email: w.email, phone: w.phone } : null
+        };
+      });
+    copy.job = {
+      ...job,
+      employer: employer ? { id: employer.id, fullName: employer.fullName, email: employer.email, phone: employer.phone } : null,
+      transactions: jobTxs
+    };
+  } else {
+    copy.job = null;
+  }
+  return copy;
+}
+
 class LocalPrismaClient {
   constructor() {
-    loadDB(); // ensure initialized
+    loadDB();
   }
 
   get user() {
@@ -559,6 +466,48 @@ class LocalPrismaClient {
     };
   }
 
+  get dispute() {
+    return {
+      findUnique: async ({ where } = {}) => {
+        const db = loadDB();
+        const found = db.disputes.find(d => matchesWhere(d, where));
+        return attachDisputeRelations(db, found);
+      },
+      findMany: async ({ where } = {}) => {
+        const db = loadDB();
+        return db.disputes
+          .filter(d => matchesWhere(d, where))
+          .map(d => attachDisputeRelations(db, d))
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      },
+      count: async ({ where } = {}) => {
+        const db = loadDB();
+        return db.disputes.filter(d => matchesWhere(d, where)).length;
+      },
+      create: async ({ data }) => {
+        const db = loadDB();
+        const item = {
+          id: uuid(),
+          status: 'OPEN',
+          adminNotes: null,
+          ...data,
+          createdAt: new Date().toISOString()
+        };
+        db.disputes.push(item);
+        saveDB(db);
+        return attachDisputeRelations(db, item);
+      },
+      update: async ({ where, data }) => {
+        const db = loadDB();
+        const idx = db.disputes.findIndex(d => matchesWhere(d, where));
+        if (idx === -1) throw new Error('Dispute not found');
+        db.disputes[idx] = { ...db.disputes[idx], ...data };
+        saveDB(db);
+        return attachDisputeRelations(db, db.disputes[idx]);
+      }
+    };
+  }
+
   async $transaction(fn) {
     return await fn(this);
   }
@@ -566,4 +515,4 @@ class LocalPrismaClient {
   async $disconnect() {}
 }
 
-module.exports = { PrismaClient: LocalPrismaClient };
+module.exports = { PrismaClient: LocalPrismaClient, getInitialSeed, saveDB };

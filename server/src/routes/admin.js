@@ -15,17 +15,18 @@ router.get('/stats', async (req, res) => {
     const totalUsers = await prisma.user.count();
     const totalJobs = await prisma.job.count();
     const completedJobs = await prisma.job.count({ where: { status: 'COMPLETED' } });
+    const openDisputes = await prisma.dispute.count({ where: { status: 'OPEN' } });
     
     const transactions = await prisma.transaction.aggregate({
       where: { status: 'RELEASED' },
       _sum: { commission: true }
     });
     
-    // We can expand this heavily
     res.json({
       totalUsers,
       totalJobs,
       completedJobs,
+      openDisputes,
       totalRevenue: transactions._sum.commission || 0
     });
   } catch (err) {
@@ -40,7 +41,7 @@ router.get('/users', async (req, res) => {
     const users = await prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       select: {
-        id: true, email: true, fullName: true, role: true, 
+        id: true, email: true, phone: true, fullName: true, role: true, 
         isActive: true, createdAt: true
       }
     });
@@ -80,8 +81,8 @@ router.get('/transactions', async (req, res) => {
       where,
       include: {
         job: { select: { title: true, category: true } },
-        employer: { select: { fullName: true, email: true } },
-        worker: { select: { fullName: true, email: true } }
+        employer: { select: { fullName: true, email: true, phone: true } },
+        worker: { select: { fullName: true, email: true, phone: true } }
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -89,6 +90,36 @@ router.get('/transactions', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch transactions' });
+  }
+});
+
+// GET /api/admin/disputes -> View all private complaints/feedback from Employers & Workers
+router.get('/disputes', async (req, res) => {
+  try {
+    const disputes = await prisma.dispute.findMany({});
+    res.json(disputes);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch disputes' });
+  }
+});
+
+// PATCH /api/admin/disputes/:id -> Admin updates status (OPEN, IN_REVIEW, RESOLVED) & adds adminNotes
+router.patch('/disputes/:id', async (req, res) => {
+  try {
+    const { status, adminNotes } = req.body;
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
+
+    const updated = await prisma.dispute.update({
+      where: { id: req.params.id },
+      data: updateData
+    });
+    res.json(updated);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update dispute' });
   }
 });
 

@@ -219,8 +219,6 @@ router.patch('/complete/:id', authenticate, requireRole(['WORKER']), async (req,
 
 // ============================================================
 // POST /api/transactions/release/:id → VERIFYING (Employer Marked Paid)
-// Employer marks that they have paid the worker directly (M-Pesa/Airtel/Tigo/Cash)
-// Uses VERIFYING status to mean "Employer Marked Paid — Awaiting Worker Confirmation"
 // ============================================================
 router.post('/release/:id', authenticate, requireRole(['EMPLOYER']), async (req, res) => {
   try {
@@ -249,7 +247,6 @@ router.post('/release/:id', authenticate, requireRole(['EMPLOYER']), async (req,
 
 // ============================================================
 // POST /api/transactions/confirm-receipt/:id → RELEASED
-// Worker confirms they received the direct payment from Employer
 // ============================================================
 router.post('/confirm-receipt/:id', authenticate, requireRole(['WORKER']), async (req, res) => {
   try {
@@ -270,6 +267,46 @@ router.post('/confirm-receipt/:id', authenticate, requireRole(['WORKER']), async
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to confirm payment receipt' });
+  }
+});
+
+// ============================================================
+// POST /api/transactions/:id/dispute
+// Employer or Worker submits a private complaint/feedback visible ONLY to Admin
+// ============================================================
+router.post('/:id/dispute', authenticate, async (req, res) => {
+  try {
+    const { description } = req.body;
+    if (!description || !description.trim()) {
+      return res.status(400).json({ error: 'Tafadhali andika maelezo ya maoni au malalamiko yako / Please enter your complaint details' });
+    }
+
+    const transaction = await prisma.transaction.findUnique({ where: { id: req.params.id } });
+    if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
+
+    const isParticipant =
+      transaction.employerId === req.user.id || transaction.workerId === req.user.id;
+    if (!isParticipant && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const dispute = await prisma.dispute.create({
+      data: {
+        jobId: transaction.jobId,
+        reporterId: req.user.id,
+        description: description.trim(),
+        status: 'OPEN'
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      dispute,
+      message: 'Maoni/Lalamiko lako limetumwa kwa Admin pekee.'
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to submit report to admin' });
   }
 });
 
@@ -357,7 +394,6 @@ router.patch('/cancel/:id', authenticate, async (req, res) => {
 
 // ============================================================
 // GET /api/transactions/my
-// Get transactions for the current user (includes phone numbers for direct P2P payment)
 // ============================================================
 router.get('/my', authenticate, async (req, res) => {
   try {

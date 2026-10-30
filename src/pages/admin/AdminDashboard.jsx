@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { Users, Briefcase, DollarSign, Activity, CheckCircle, AlertCircle, Shield, ArrowRight, XCircle } from 'lucide-react';
+import { Users, Briefcase, DollarSign, Activity, AlertCircle, Shield, XCircle, Phone, MessageSquareWarning, CheckCircle } from 'lucide-react';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
-  const [verifications, setVerifications] = useState([]);
+  const [disputes, setDisputes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'verifications'
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'disputes'
   const [actionLoading, setActionLoading] = useState(null);
   const [message, setMessage] = useState('');
+  const [notesInput, setNotesInput] = useState({});
 
   useEffect(() => {
     fetchAdminData();
@@ -17,14 +18,19 @@ const AdminDashboard = () => {
 
   const fetchAdminData = async () => {
     try {
-      const [statsRes, usersRes, verificationsRes] = await Promise.all([
+      const [statsRes, usersRes, disputesRes] = await Promise.all([
         api.get('/admin/stats'),
         api.get('/admin/users'),
-        api.get('/admin/transactions?status=VERIFYING')
+        api.get('/admin/disputes')
       ]);
       setStats(statsRes.data);
       setUsers(usersRes.data);
-      setVerifications(verificationsRes.data);
+      setDisputes(disputesRes.data);
+      const initialNotes = {};
+      (disputesRes.data || []).forEach(d => {
+        initialNotes[d.id] = d.adminNotes || '';
+      });
+      setNotesInput(initialNotes);
     } catch (err) {
       console.error(err);
       setMessage('Failed to load admin data');
@@ -42,37 +48,25 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleVerify = async (txId) => {
-    setActionLoading(txId);
+  const handleUpdateDispute = async (disputeId, status) => {
+    setActionLoading(disputeId);
     setMessage('');
     try {
-      await api.patch(`/transactions/verify/${txId}`);
-      setMessage('Payment successfully verified!');
-      // Remove from list
-      setVerifications(verifications.filter(tx => tx.id !== txId));
+      const res = await api.patch(`/admin/disputes/${disputeId}`, {
+        status,
+        adminNotes: notesInput[disputeId] || ''
+      });
+      setDisputes(disputes.map(d => d.id === disputeId ? res.data : d));
+      setMessage('✓ Ripoti imesasishwa kikamilifu! (Dispute updated)');
     } catch (err) {
       console.error(err);
-      setMessage('Failed to verify payment');
+      setMessage('Failed to update dispute');
     } finally {
       setActionLoading(null);
     }
   };
 
-  const handleCancel = async (txId) => {
-    if (!window.confirm('Are you sure you want to cancel this transaction? This cannot be undone.')) return;
-    setActionLoading(txId);
-    setMessage('');
-    try {
-      await api.patch(`/transactions/cancel/${txId}`);
-      setMessage('Transaction cancelled.');
-      setVerifications(verifications.filter(tx => tx.id !== txId));
-    } catch (err) {
-      console.error(err);
-      setMessage('Failed to cancel transaction');
-    } finally {
-      setActionLoading(null);
-    }
-  };
+  const openCount = disputes.filter(d => d.status !== 'RESOLVED').length;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
@@ -82,22 +76,25 @@ const AdminDashboard = () => {
             <h1 className="text-3xl font-bold text-gray-900 flex items-center">
               <Activity className="mr-3 text-red-500" /> Admin Control Panel
             </h1>
-            <p className="mt-1 text-gray-500 text-sm">Monitor platform metrics and verify payments.</p>
+            <p className="mt-1 text-gray-500 text-sm">
+              Simamia watumiaji na malalamiko/maoni ya siri kutoka kwa Waajiri na Wafanyakazi.
+            </p>
           </div>
           <div className="flex bg-white rounded-lg p-1 border border-gray-200 shadow-sm">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'overview' ? 'bg-primary-50 text-primary-700' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors cursor-pointer ${activeTab === 'overview' ? 'bg-primary-50 text-primary-700' : 'text-gray-500 hover:text-gray-700'}`}
             >
-              System Overview
+              Watumiaji & Mfumo (Overview)
             </button>
             <button
-              onClick={() => setActiveTab('verifications')}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${activeTab === 'verifications' ? 'bg-primary-50 text-primary-700' : 'text-gray-500 hover:text-gray-700'}`}
+              onClick={() => setActiveTab('disputes')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center cursor-pointer ${activeTab === 'disputes' ? 'bg-red-50 text-red-700 font-bold' : 'text-gray-500 hover:text-gray-700'}`}
             >
-              Verifications 
-              {verifications.length > 0 && (
-                <span className="ml-2 bg-red-100 text-red-600 py-0.5 px-2 rounded-full text-xs">{verifications.length}</span>
+              <MessageSquareWarning size={16} className="mr-1.5" />
+              Maoni & Malalamiko (Disputes)
+              {openCount > 0 && (
+                <span className="ml-2 bg-red-600 text-white py-0.5 px-2 rounded-full text-xs">{openCount}</span>
               )}
             </button>
           </div>
@@ -115,10 +112,10 @@ const AdminDashboard = () => {
           <>
             {/* Stats Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <StatCard title="Total Users" value={stats?.totalUsers || 0} icon={<Users className="text-blue-500" />} />
-              <StatCard title="Total Jobs Posted" value={stats?.totalJobs || 0} icon={<Briefcase className="text-primary-500" />} />
-              <StatCard title="Jobs Completed" value={stats?.completedJobs || 0} icon={<CheckCircleIcon className="text-green-500" />} />
-              <StatCard title="Platform Revenue" value={`TSh ${stats?.totalRevenue || 0}`} icon={<DollarSign className="text-yellow-500" />} />
+              <StatCard title="Watumiaji Wote (Users)" value={stats?.totalUsers || 0} icon={<Users className="text-blue-500" />} />
+              <StatCard title="Kazi Zilizopostiwa" value={stats?.totalJobs || 0} icon={<Briefcase className="text-primary-500" />} />
+              <StatCard title="Kazi Zilizokamilika" value={stats?.completedJobs || 0} icon={<CheckCircle className="text-green-500" />} />
+              <StatCard title="Malalamiko Wazi" value={openCount} icon={<MessageSquareWarning className="text-red-500" />} />
             </div>
 
             {/* Users Table */}
@@ -131,6 +128,7 @@ const AdminDashboard = () => {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -141,12 +139,13 @@ const AdminDashboard = () => {
                     {users.map((user) => (
                       <tr key={user.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{user.fullName}</div>
-                              <div className="text-sm text-gray-500">{user.email}</div>
-                            </div>
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{user.fullName}</div>
+                            <div className="text-sm text-gray-500">{user.email}</div>
                           </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">
+                          {user.phone || '—'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -170,7 +169,7 @@ const AdminDashboard = () => {
                           {user.role !== 'ADMIN' && (
                             <button 
                               onClick={() => toggleUserStatus(user.id, user.isActive)}
-                              className={`${user.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
+                              className={`cursor-pointer ${user.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
                             >
                               {user.isActive ? 'Suspend' : 'Activate'}
                             </button>
@@ -185,79 +184,105 @@ const AdminDashboard = () => {
           </>
         ) : (
           <div className="space-y-4">
-            {verifications.length === 0 ? (
+            {disputes.length === 0 ? (
               <div className="bg-white p-12 rounded-xl shadow-sm border border-gray-100 text-center">
                 <Shield size={48} className="mx-auto text-gray-300 mb-4" />
-                <h3 className="text-xl font-medium text-gray-900 mb-2">All caught up!</h3>
-                <p className="text-gray-500">There are no pending payment verifications at the moment.</p>
+                <h3 className="text-xl font-medium text-gray-900 mb-2">Hakuna Malalamiko Kwa Sasa!</h3>
+                <p className="text-gray-500">Mwajiri au mfanyakazi akituma maoni/lalamiko ya siri, yataonekana hapa ili uwafuate moja kwa moja.</p>
               </div>
             ) : (
-              verifications.map(tx => (
-                <div key={tx.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col lg:flex-row gap-6">
-                  {/* Info */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-4">
-                      <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold flex items-center">
-                        <Shield size={14} className="mr-1.5" /> Verifying Payment
-                      </span>
-                      <span className="text-sm text-gray-500">{new Date(tx.updatedAt).toLocaleString()}</span>
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">{tx.job?.title}</h3>
-                    
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase">Employer (Payer)</p>
-                        <p className="font-medium text-gray-900">{tx.employer?.fullName}</p>
-                        <p className="text-sm text-gray-500">{tx.employer?.email}</p>
+              disputes.map(d => {
+                const employer = d.job?.employer;
+                const worker = d.job?.transactions?.[0]?.worker;
+                return (
+                  <div key={d.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                      <div className="flex items-center gap-3">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          d.status === 'OPEN' ? 'bg-red-100 text-red-800' :
+                          d.status === 'IN_REVIEW' ? 'bg-amber-100 text-amber-800' :
+                          'bg-emerald-100 text-emerald-800'
+                        }`}>
+                          {d.status === 'OPEN' ? '🔴 MPYA (OPEN)' : d.status === 'IN_REVIEW' ? '🟡 INASHUGHULIKIWA' : '🟢 IMETATULIWA (RESOLVED)'}
+                        </span>
+                        <span className="text-xs font-semibold bg-gray-100 text-gray-700 px-2.5 py-1 rounded">
+                          Aliyelalamika: {d.reporter?.role === 'EMPLOYER' ? 'MWAJIRI (Employer)' : 'MFANYAKAZI (Worker)'}
+                        </span>
                       </div>
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase">Worker (Payee)</p>
-                        <p className="font-medium text-gray-900">{tx.worker?.fullName}</p>
-                        <p className="text-sm text-gray-500">{tx.worker?.email}</p>
+                      <span className="text-xs text-gray-400">{new Date(d.createdAt).toLocaleString()}</span>
+                    </div>
+
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">
+                      Kazi: {d.job?.title || 'Job'} (TSh {d.job?.payPerWorker?.toLocaleString()})
+                    </h3>
+
+                    {/* Private Complaint Message */}
+                    <div className="bg-red-50/70 border border-red-200 rounded-xl p-4 mb-5">
+                      <p className="text-xs font-bold uppercase text-red-700 mb-1">
+                        Ujumbe / Sababu kutoka kwa {d.reporter?.fullName} ({d.reporter?.role}):
+                      </p>
+                      <p className="text-gray-900 text-sm whitespace-pre-wrap font-medium">{d.description}</p>
+                    </div>
+
+                    {/* Direct Contact Cards for Both Parties */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                      <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4">
+                        <p className="text-xs font-bold uppercase text-blue-700 mb-1">Mawasiliano ya Mwajiri (Employer)</p>
+                        <p className="font-bold text-gray-900">{employer?.fullName || '—'}</p>
+                        <p className="text-sm text-gray-600">{employer?.email}</p>
+                        {employer?.phone && (
+                          <p className="text-sm font-bold text-blue-800 mt-1 flex items-center">
+                            <Phone size={14} className="mr-1.5" /> {employer.phone}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4">
+                        <p className="text-xs font-bold uppercase text-emerald-700 mb-1">Mawasiliano ya Mfanyakazi (Worker)</p>
+                        <p className="font-bold text-gray-900">{worker?.fullName || (d.reporter?.role === 'WORKER' ? d.reporter?.fullName : '—')}</p>
+                        <p className="text-sm text-gray-600">{worker?.email || (d.reporter?.role === 'WORKER' ? d.reporter?.email : '')}</p>
+                        {(worker?.phone || (d.reporter?.role === 'WORKER' && d.reporter?.phone)) && (
+                          <p className="text-sm font-bold text-emerald-800 mt-1 flex items-center">
+                            <Phone size={14} className="mr-1.5" /> {worker?.phone || d.reporter?.phone}
+                          </p>
+                        )}
                       </div>
                     </div>
 
-                    <div className="bg-gray-50 rounded-lg p-4 inline-block min-w-[200px]">
-                      <p className="text-xs text-gray-500 uppercase">Amount to Verify</p>
-                      <p className="text-2xl font-bold text-gray-900">TSh {tx.amount?.toLocaleString()}</p>
-                      <p className="text-sm text-gray-500 mt-1">Method: {tx.paymentMethod}</p>
+                    {/* Admin Notes & Resolution Actions */}
+                    <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
+                      <div className="flex-1">
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                          Maamuzi / Kumbukumbu za Admin (Admin Notes)
+                        </label>
+                        <input
+                          type="text"
+                          value={notesInput[d.id] || ''}
+                          onChange={e => setNotesInput({ ...notesInput, [d.id]: e.target.value })}
+                          placeholder="Andika ulichokubaliana baada ya kuwapigia simu..."
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleUpdateDispute(d.id, 'IN_REVIEW')}
+                          disabled={actionLoading === d.id}
+                          className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                        >
+                          Inashughulikiwa
+                        </button>
+                        <button
+                          onClick={() => handleUpdateDispute(d.id, 'RESOLVED')}
+                          disabled={actionLoading === d.id}
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                        >
+                          ✓ Imetatuliwa (Resolved)
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Proof & Actions */}
-                  <div className="flex flex-col items-start lg:items-end gap-4 min-w-[300px]">
-                    <div className="w-full">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Payment Proof Uploaded:</p>
-                      {tx.paymentProof ? (
-                        <a href={tx.paymentProof} target="_blank" rel="noreferrer" className="block w-full h-48 border border-gray-200 rounded-lg overflow-hidden hover:opacity-90 transition-opacity">
-                          <img src={tx.paymentProof} alt="Proof" className="w-full h-full object-cover" />
-                        </a>
-                      ) : (
-                        <div className="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-                          No image provided
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex gap-3 w-full mt-2">
-                      <button
-                        onClick={() => handleCancel(tx.id)}
-                        disabled={actionLoading === tx.id}
-                        className="flex-1 px-4 py-2.5 border border-red-200 text-red-600 rounded-lg font-medium hover:bg-red-50 transition-colors disabled:opacity-50 flex items-center justify-center"
-                      >
-                        <XCircle size={18} className="mr-1.5" /> Reject
-                      </button>
-                      <button
-                        onClick={() => handleVerify(tx.id)}
-                        disabled={actionLoading === tx.id}
-                        className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center"
-                      >
-                        {actionLoading === tx.id ? 'Processing...' : <><CheckCircleIcon size={18} className="mr-1.5" /> Approve</>}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
@@ -265,10 +290,6 @@ const AdminDashboard = () => {
     </div>
   );
 };
-
-const CheckCircleIcon = ({ className, size = 24 }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-);
 
 const StatCard = ({ title, value, icon }) => (
   <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center">
