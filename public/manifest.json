@@ -1,0 +1,19 @@
+{
+  "name": "KaziLink — Jukwaa la Kazi na Mafundi",
+  "short_name": "KaziLink",
+  "description": "Pata mfanyakazi au kibarua papo hapo. Instant Gig & Job Marketplace (100% Free, 0% Commission).",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0c4a6e",
+  "theme_color": "#0c4a6e",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

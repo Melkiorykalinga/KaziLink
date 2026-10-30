@@ -1,12 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('../utils/prismaClient');
 const authenticate = require('../middleware/authenticate');
 const requireRole = require('../middleware/requireRole');
 const validate = require('../middleware/validate');
 const { jobCreateSchema, jobUpdateSchema } = require('../validators');
 
 const prisma = new PrismaClient();
+
+// Configurable platform fee rate (0% during free growth phase; set PLATFORM_FEE_RATE=0.15 later)
+const PLATFORM_FEE_RATE = parseFloat(process.env.PLATFORM_FEE_RATE || '0');
 
 // POST /api/jobs -> Create a job (Employer only)
 router.post('/', authenticate, requireRole(['EMPLOYER']), validate(jobCreateSchema), async (req, res) => {
@@ -17,7 +20,7 @@ router.post('/', authenticate, requireRole(['EMPLOYER']), validate(jobCreateSche
       payPerWorker, specialRequirements, paymentMethod, applicationDeadline
     } = req.body;
 
-    const platformFee = payPerWorker * 0.15;
+    const platformFee = payPerWorker * PLATFORM_FEE_RATE;
     const totalPayWithFee = payPerWorker + platformFee;
 
     const job = await prisma.job.create({
@@ -45,6 +48,24 @@ router.get('/', authenticate, async (req, res) => {
       // Employers only see their own jobs -> IDOR protection
       const jobs = await prisma.job.findMany({
         where: { employerId: req.user.id },
+        include: {
+          applications: {
+            include: {
+              worker: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  phone: true,
+                  locationCity: true,
+                  workerProfile: {
+                    select: { averageRating: true, totalJobsCompleted: true, verifiedSkills: true }
+                  }
+                }
+              }
+            },
+            orderBy: { appliedAt: 'desc' }
+          }
+        },
         orderBy: { createdAt: 'desc' }
       });
       return res.json(jobs);
@@ -63,6 +84,10 @@ router.get('/', authenticate, async (req, res) => {
         include: {
           employer: {
             select: { fullName: true, employerProfile: { select: { businessName: true, logoUrl: true } } }
+          },
+          applications: {
+            where: { workerId: req.user.id },
+            select: { id: true, status: true }
           }
         },
         orderBy: { createdAt: 'desc' }
@@ -74,6 +99,94 @@ router.get('/', authenticate, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch jobs' });
+  }
+});
+
+// POST /api/jobs/:id/apply -> Worker applies to a job
+router.post('/:id/apply', authenticate, requireRole(['WORKER']), async (req, res) => {
+  try {
+    const jobId = req.params.id;
+    const job = await prisma.job.findUnique({ where: { id: jobId } });
+    if (!job || job.status !== 'ACTIVE') {
+      return res.status(404).json({ error: 'Job not found or no longer active' });
+    }
+
+    const existing = await prisma.application.findFirst({
+      where: { jobId, workerId: req.user.id }
+    });
+    if (existing) {
+      return res.status(400).json({ error: 'You have already applied for this job' });
+    }
+
+    const application = await prisma.application.create({
+      data: {
+        jobId,
+        workerId: req.user.id,
+        coverMessage: req.body.coverMessage || null,
+        status: 'PENDING'
+      }
+    });
+
+    res.status(201).json(application);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to apply for job' });
+  }
+});
+
+// POST /api/jobs/:id/applications/:appId/accept -> Employer accepts worker (Direct P2P 0% commission)
+router.post('/:id/applications/:appId/accept', authenticate, requireRole(['EMPLOYER']), async (req, res) => {
+  try {
+    const { id: jobId, appId } = req.params;
+    const job = await prisma.job.findUnique({ where: { id: jobId } });
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    if (job.employerId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+
+    const application = await prisma.application.findUnique({ where: { id: appId } });
+    if (!application || application.jobId !== jobId) {
+      return res.status(404).json({ error: 'Application not found' });
+    }
+    if (application.status === 'ACCEPTED') {
+      return res.status(400).json({ error: 'Worker already accepted' });
+    }
+
+    const commissionRate = parseFloat(process.env.PLATFORM_COMMISSION_RATE || '0');
+    const amount = job.payPerWorker;
+    const commission = amount * commissionRate;
+    const workerAmount = amount - commission;
+
+    const result = await prisma.$transaction(async (tx) => {
+      const updatedApp = await tx.application.update({
+        where: { id: appId },
+        data: { status: 'ACCEPTED' }
+      });
+
+      await tx.job.update({
+        where: { id: jobId },
+        data: { workersAccepted: { increment: 1 } }
+      });
+
+      // In Direct P2P (0% commission) mode, start at FUNDED so worker can immediately start the job without Admin delay
+      const transaction = await tx.transaction.create({
+        data: {
+          jobId,
+          employerId: req.user.id,
+          workerId: application.workerId,
+          amount,
+          commission,
+          workerAmount,
+          paymentMethod: job.paymentMethod || 'MPESA',
+          status: 'FUNDED'
+        }
+      });
+
+      return { application: updatedApp, transaction };
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to accept applicant' });
   }
 });
 
@@ -125,7 +238,7 @@ router.patch('/:id', authenticate, requireRole(['EMPLOYER']), validate(jobUpdate
     const updateData = { ...req.body };
 
     if (updateData.payPerWorker !== undefined) {
-      const platformFee = updateData.payPerWorker * 0.15;
+      const platformFee = updateData.payPerWorker * PLATFORM_FEE_RATE;
       updateData.totalPayWithFee = updateData.payPerWorker + platformFee;
     }
 

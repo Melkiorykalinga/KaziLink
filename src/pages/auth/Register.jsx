@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { User, Mail, Lock, Phone, MapPin, Briefcase, Loader, ArrowRight } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
+import { User, Mail, Lock, Phone, MapPin, Loader, ArrowRight } from 'lucide-react';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -16,6 +17,7 @@ const Register = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -36,7 +38,6 @@ const Register = () => {
     setError('');
     setIsLoading(true);
     
-    // Quick validation
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters.');
       setIsLoading(false);
@@ -65,12 +66,12 @@ const Register = () => {
       <div className="max-w-xl w-full space-y-8 bg-white p-8 md:p-10 rounded-2xl shadow-xl border border-gray-100">
         <div>
           <h2 className="text-center text-3xl font-extrabold text-gray-900">
-            Create an Account
+            {t('reg_title')}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Already have an account?{' '}
+            {t('reg_haveAccount')}{' '}
             <Link to="/login" className="font-medium text-primary-600 hover:text-primary-500">
-              Sign in
+              {t('reg_signIn')}
             </Link>
           </p>
         </div>
@@ -88,20 +89,20 @@ const Register = () => {
             <button
               type="button"
               onClick={() => setFormData({...formData, role: 'WORKER'})}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors cursor-pointer ${
                 formData.role === 'WORKER' ? 'bg-white text-primary-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              I want to Work
+              {t('reg_wantWork')}
             </button>
             <button
               type="button"
               onClick={() => setFormData({...formData, role: 'EMPLOYER'})}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors cursor-pointer ${
                 formData.role === 'EMPLOYER' ? 'bg-white text-primary-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              I want to Hire
+              {t('reg_wantHire')}
             </button>
           </div>
 
@@ -116,7 +117,7 @@ const Register = () => {
                 type="text"
                 required
                 className="appearance-none rounded-lg relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm bg-gray-50"
-                placeholder={formData.role === 'WORKER' ? "Full Name" : "Company or Full Name"}
+                placeholder={formData.role === 'WORKER' ? t('reg_fullNameWorker') : t('reg_fullNameEmployer')}
                 value={formData.fullName}
                 onChange={handleChange}
               />
@@ -131,7 +132,7 @@ const Register = () => {
                 type="email"
                 required
                 className="appearance-none rounded-lg relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm bg-gray-50"
-                placeholder="Email address"
+                placeholder={t('login_email')}
                 value={formData.email}
                 onChange={handleChange}
               />
@@ -146,7 +147,7 @@ const Register = () => {
                 type="text"
                 required
                 className="appearance-none rounded-lg relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm bg-gray-50"
-                placeholder="Phone number"
+                placeholder={t('reg_phone')}
                 value={formData.phone}
                 onChange={handleChange}
               />
@@ -161,7 +162,7 @@ const Register = () => {
                 type="text"
                 required
                 className="appearance-none rounded-lg relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm bg-gray-50"
-                placeholder="City / Location"
+                placeholder={t('reg_city')}
                 value={formData.locationCity}
                 onChange={handleChange}
               />
@@ -176,7 +177,7 @@ const Register = () => {
                 type="password"
                 required
                 className="appearance-none rounded-lg relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm bg-gray-50"
-                placeholder="Secure Password"
+                placeholder={t('reg_passwordPlaceholder')}
                 value={formData.password}
                 onChange={handleChange}
               />
@@ -187,13 +188,13 @@ const Register = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-accent-600 hover:bg-accent-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-500 transition-all shadow-md active:scale-95"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-accent-600 hover:bg-accent-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-500 transition-all shadow-md active:scale-95 cursor-pointer"
             >
               {isLoading ? (
                 <Loader className="animate-spin h-5 w-5 mr-2" />
               ) : (
                 <>
-                  Register <ArrowRight className="ml-2 h-5 w-5" />
+                  {t('reg_submit')} <ArrowRight className="ml-2 h-5 w-5" />
                 </>
               )}
             </button>

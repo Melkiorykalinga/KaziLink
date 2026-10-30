@@ -1,17 +1,67 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('../utils/prismaClient');
 const authenticate = require('../middleware/authenticate');
 const requireRole = require('../middleware/requireRole');
 const { upload, uploadToCloudinary, handleUploadError } = require('../utils/cloudinary');
 const validate = require('../middleware/validate');
-const { transactionCreateSchema, transactionFundSchema, transactionVerifySchema } = require('../validators');
+const { transactionCreateSchema } = require('../validators');
 
 const prisma = new PrismaClient();
 
+// Configurable commission rate (0% during free growth phase; set PLATFORM_COMMISSION_RATE=0.10 later)
+const COMMISSION_RATE = parseFloat(process.env.PLATFORM_COMMISSION_RATE || '0');
+
+// Helper: finalize transaction & credit worker/employer stats once payment is confirmed
+async function finalizePayment(tx, transaction) {
+  const updatedTx = await tx.transaction.update({
+    where: { id: transaction.id },
+    data: { status: 'RELEASED' }
+  });
+
+  await tx.job.update({
+    where: { id: transaction.jobId },
+    data: { status: 'COMPLETED' }
+  });
+
+  await tx.application.updateMany({
+    where: { jobId: transaction.jobId, workerId: transaction.workerId, status: 'ACCEPTED' },
+    data: { status: 'JOB_COMPLETED' }
+  });
+
+  const workerProfile = await tx.workerProfile.findUnique({
+    where: { userId: transaction.workerId }
+  });
+
+  if (workerProfile) {
+    await tx.workerProfile.update({
+      where: { id: workerProfile.id },
+      data: {
+        totalEarned: workerProfile.totalEarned + updatedTx.workerAmount,
+        totalJobsCompleted: workerProfile.totalJobsCompleted + 1
+      }
+    });
+  }
+
+  const employerProfile = await tx.employerProfile.findUnique({
+    where: { userId: transaction.employerId }
+  });
+
+  if (employerProfile) {
+    await tx.employerProfile.update({
+      where: { id: employerProfile.id },
+      data: {
+        totalJobsPosted: employerProfile.totalJobsPosted + 1
+      }
+    });
+  }
+
+  return updatedTx;
+}
+
 // ============================================================
-// POST /api/transactions/create → PENDING
-// Employer creates escrow transaction for an accepted worker
+// POST /api/transactions/create → FUNDED (Direct P2P 0% Fee Mode)
+// Employer creates transaction for an accepted worker
 // ============================================================
 router.post('/create', authenticate, requireRole(['EMPLOYER']), validate(transactionCreateSchema), async (req, res) => {
   try {
@@ -21,20 +71,18 @@ router.post('/create', authenticate, requireRole(['EMPLOYER']), validate(transac
     if (!job) return res.status(404).json({ error: 'Job not found' });
     if (job.employerId !== req.user.id) return res.status(403).json({ error: 'Forbidden: You do not own this job' });
 
-    // Worker must have an ACCEPTED application
     const application = await prisma.application.findFirst({
       where: { jobId, workerId, status: 'ACCEPTED' }
     });
     if (!application) return res.status(400).json({ error: 'Worker is not accepted for this job' });
 
-    // No duplicate active transactions for the same job+worker
     const existing = await prisma.transaction.findFirst({
       where: { jobId, workerId, status: { notIn: ['CANCELLED'] } }
     });
     if (existing) return res.status(400).json({ error: 'An active transaction already exists for this job and worker' });
 
     const amount = job.payPerWorker;
-    const commission = amount * 0.10;
+    const commission = amount * COMMISSION_RATE;
     const workerAmount = amount - commission;
 
     const transaction = await prisma.transaction.create({
@@ -46,7 +94,7 @@ router.post('/create', authenticate, requireRole(['EMPLOYER']), validate(transac
         commission,
         workerAmount,
         paymentMethod: paymentMethod || 'MPESA',
-        status: 'PENDING'
+        status: 'FUNDED'
       }
     });
 
@@ -58,8 +106,7 @@ router.post('/create', authenticate, requireRole(['EMPLOYER']), validate(transac
 });
 
 // ============================================================
-// POST /api/transactions/fund → VERIFYING
-// Employer uploads payment proof, awaiting admin verification
+// POST /api/transactions/fund → VERIFYING (Optional proof upload)
 // ============================================================
 router.post('/fund', authenticate, requireRole(['EMPLOYER']), upload.single('paymentProof'), handleUploadError, async (req, res) => {
   try {
@@ -77,16 +124,14 @@ router.post('/fund', authenticate, requireRole(['EMPLOYER']), upload.single('pay
 
     if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
     if (transaction.employerId !== req.user.id) return res.status(403).json({ error: 'Forbidden: You do not own this transaction' });
-    if (transaction.status !== 'PENDING') return res.status(400).json({ error: 'Can only fund PENDING transactions' });
 
-    // Upload validated image buffer to Cloudinary
     const secureUrl = await uploadToCloudinary(req.file.buffer, req.file.originalname);
 
     const updatedTransaction = await prisma.transaction.update({
       where: { id: transactionId },
       data: {
         paymentProof: secureUrl,
-        status: 'VERIFYING'
+        status: 'FUNDED'
       }
     });
 
@@ -99,15 +144,11 @@ router.post('/fund', authenticate, requireRole(['EMPLOYER']), upload.single('pay
 
 // ============================================================
 // PATCH /api/transactions/verify/:id → FUNDED
-// Admin verifies the payment proof
 // ============================================================
 router.patch('/verify/:id', authenticate, requireRole(['ADMIN']), async (req, res) => {
   try {
     const transaction = await prisma.transaction.findUnique({ where: { id: req.params.id } });
-
     if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
-    if (transaction.status !== 'VERIFYING') return res.status(400).json({ error: 'Can only verify VERIFYING transactions' });
-    if (!transaction.paymentProof) return res.status(400).json({ error: 'No payment proof uploaded' });
 
     const updatedTransaction = await prisma.transaction.update({
       where: { id: transaction.id },
@@ -123,7 +164,7 @@ router.patch('/verify/:id', authenticate, requireRole(['ADMIN']), async (req, re
 
 // ============================================================
 // PATCH /api/transactions/start/:id → IN_PROGRESS
-// Worker starts the funded job
+// Worker starts the job directly (no Admin wait required)
 // ============================================================
 router.patch('/start/:id', authenticate, requireRole(['WORKER']), async (req, res) => {
   try {
@@ -131,14 +172,15 @@ router.patch('/start/:id', authenticate, requireRole(['WORKER']), async (req, re
 
     if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
     if (transaction.workerId !== req.user.id) return res.status(403).json({ error: 'Forbidden: This transaction is not assigned to you' });
-    if (transaction.status !== 'FUNDED') return res.status(400).json({ error: 'Transaction must be FUNDED before starting. Current: ' + transaction.status });
+    if (!['FUNDED', 'PENDING'].includes(transaction.status)) {
+      return res.status(400).json({ error: 'Job cannot be started from status: ' + transaction.status });
+    }
 
     const updatedTransaction = await prisma.transaction.update({
       where: { id: transaction.id },
       data: { status: 'IN_PROGRESS' }
     });
 
-    // Update job status to IN_PROGRESS
     await prisma.job.update({
       where: { id: transaction.jobId },
       data: { status: 'IN_PROGRESS' }
@@ -176,8 +218,9 @@ router.patch('/complete/:id', authenticate, requireRole(['WORKER']), async (req,
 });
 
 // ============================================================
-// POST /api/transactions/release/:id → RELEASED
-// Employer releases escrowed funds to the worker
+// POST /api/transactions/release/:id → VERIFYING (Employer Marked Paid)
+// Employer marks that they have paid the worker directly (M-Pesa/Airtel/Tigo/Cash)
+// Uses VERIFYING status to mean "Employer Marked Paid — Awaiting Worker Confirmation"
 // ============================================================
 router.post('/release/:id', authenticate, requireRole(['EMPLOYER']), async (req, res) => {
   try {
@@ -185,61 +228,48 @@ router.post('/release/:id', authenticate, requireRole(['EMPLOYER']), async (req,
 
     if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
     if (transaction.employerId !== req.user.id) return res.status(403).json({ error: 'Forbidden: You do not own this transaction' });
-    if (transaction.status === 'RELEASED') return res.status(400).json({ error: 'Payment already released' });
+    if (transaction.status === 'RELEASED') return res.status(400).json({ error: 'Payment already confirmed' });
     if (transaction.status !== 'COMPLETED') return res.status(400).json({ error: 'Worker must mark job as COMPLETED first. Current: ' + transaction.status });
 
-    // Atomic: release funds + update job + credit worker stats
-    await prisma.$transaction(async (tx) => {
-      const updatedTx = await tx.transaction.update({
-        where: { id: transaction.id },
-        data: { status: 'RELEASED' }
-      });
-
-      await tx.job.update({
-        where: { id: transaction.jobId },
-        data: { status: 'COMPLETED' }
-      });
-
-      // Update application status
-      await tx.application.updateMany({
-        where: { jobId: transaction.jobId, workerId: transaction.workerId, status: 'ACCEPTED' },
-        data: { status: 'JOB_COMPLETED' }
-      });
-
-      // Credit worker profile
-      const workerProfile = await tx.workerProfile.findUnique({
-        where: { userId: transaction.workerId }
-      });
-
-      if (workerProfile) {
-        await tx.workerProfile.update({
-          where: { id: workerProfile.id },
-          data: {
-            totalEarned: workerProfile.totalEarned + updatedTx.workerAmount,
-            totalJobsCompleted: workerProfile.totalJobsCompleted + 1
-          }
-        });
-      }
-
-      // Credit employer profile
-      const employerProfile = await tx.employerProfile.findUnique({
-        where: { userId: transaction.employerId }
-      });
-
-      if (employerProfile) {
-        await tx.employerProfile.update({
-          where: { id: employerProfile.id },
-          data: {
-            totalJobsPosted: employerProfile.totalJobsPosted + 1
-          }
-        });
-      }
+    const updatedTx = await prisma.transaction.update({
+      where: { id: transaction.id },
+      data: { status: 'VERIFYING' }
     });
 
-    res.json({ success: true, message: 'Payment successfully released to worker' });
+    res.json({
+      success: true,
+      transaction: updatedTx,
+      message: 'Marked as paid! Waiting for worker to confirm receipt.'
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Failed to release payment' });
+    res.status(500).json({ error: 'Failed to mark payment as sent' });
+  }
+});
+
+// ============================================================
+// POST /api/transactions/confirm-receipt/:id → RELEASED
+// Worker confirms they received the direct payment from Employer
+// ============================================================
+router.post('/confirm-receipt/:id', authenticate, requireRole(['WORKER']), async (req, res) => {
+  try {
+    const transaction = await prisma.transaction.findUnique({ where: { id: req.params.id } });
+
+    if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
+    if (transaction.workerId !== req.user.id) return res.status(403).json({ error: 'Forbidden: Not your transaction' });
+    if (transaction.status === 'RELEASED') return res.status(400).json({ error: 'Payment already confirmed' });
+    if (!['VERIFYING', 'COMPLETED'].includes(transaction.status)) {
+      return res.status(400).json({ error: 'Cannot confirm payment at status: ' + transaction.status });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await finalizePayment(tx, transaction);
+    });
+
+    res.json({ success: true, message: 'Payment receipt confirmed!' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to confirm payment receipt' });
   }
 });
 
@@ -254,7 +284,7 @@ router.post('/:id/rate', authenticate, requireRole(['EMPLOYER']), async (req, re
 
     if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
     if (transaction.employerId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
-    if (transaction.status !== 'RELEASED' && transaction.status !== 'COMPLETED') {
+    if (!['RELEASED', 'VERIFYING', 'COMPLETED'].includes(transaction.status)) {
       return res.status(400).json({ error: 'Job must be completed before rating' });
     }
 
@@ -278,7 +308,6 @@ router.post('/:id/rate', authenticate, requireRole(['EMPLOYER']), async (req, re
       }
     });
 
-    // Update average rating on worker profile
     const allRatings = await prisma.rating.findMany({
       where: { rateeId: transaction.workerId }
     });
@@ -298,7 +327,6 @@ router.post('/:id/rate', authenticate, requireRole(['EMPLOYER']), async (req, re
 
 // ============================================================
 // PATCH /api/transactions/cancel/:id → CANCELLED
-// Admin or Employer can cancel a transaction (only if not yet IN_PROGRESS)
 // ============================================================
 router.patch('/cancel/:id', authenticate, async (req, res) => {
   try {
@@ -306,13 +334,11 @@ router.patch('/cancel/:id', authenticate, async (req, res) => {
 
     if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
 
-    // Only owner employer or admin can cancel
     const isOwner = transaction.employerId === req.user.id;
     const isAdmin = req.user.role === 'ADMIN';
     if (!isOwner && !isAdmin) return res.status(403).json({ error: 'Forbidden' });
 
-    // Cannot cancel transactions that are already in progress or beyond
-    const nonCancellable = ['IN_PROGRESS', 'COMPLETED', 'RELEASED', 'CANCELLED'];
+    const nonCancellable = ['IN_PROGRESS', 'COMPLETED', 'VERIFYING', 'RELEASED', 'CANCELLED'];
     if (nonCancellable.includes(transaction.status)) {
       return res.status(400).json({ error: 'Cannot cancel a transaction with status: ' + transaction.status });
     }
@@ -331,7 +357,7 @@ router.patch('/cancel/:id', authenticate, async (req, res) => {
 
 // ============================================================
 // GET /api/transactions/my
-// Get transactions for the current user
+// Get transactions for the current user (includes phone numbers for direct P2P payment)
 // ============================================================
 router.get('/my', authenticate, async (req, res) => {
   try {
@@ -340,16 +366,14 @@ router.get('/my', authenticate, async (req, res) => {
       where.employerId = req.user.id;
     } else if (req.user.role === 'WORKER') {
       where.workerId = req.user.id;
-    } else {
-      // Admin gets all
     }
 
     const transactions = await prisma.transaction.findMany({
       where,
       include: {
         job: { select: { title: true, category: true, locationAddress: true } },
-        employer: { select: { fullName: true, email: true } },
-        worker: { select: { fullName: true, email: true } }
+        employer: { select: { fullName: true, email: true, phone: true } },
+        worker: { select: { fullName: true, email: true, phone: true } }
       },
       orderBy: { createdAt: 'desc' }
     });

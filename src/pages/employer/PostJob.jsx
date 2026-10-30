@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Briefcase, FileText, ListChecks, DollarSign, CheckCircle,
-  ArrowRight, ArrowLeft, MapPin, Clock, Calendar, Users, Zap
+  FileText, DollarSign, CheckCircle, Calendar
 } from 'lucide-react';
 import api from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 
 const CATEGORIES = [
   'Construction', 'Cleaning', 'Delivery', 'Driving', 'Events',
@@ -22,6 +22,7 @@ const initialForm = {
   locationAddress: '',
   payPerWorker: '',
   paymentMethod: 'MPESA',
+  paymentMethodDisplay: 'M-Pesa',
   deadlineDate: '',
   deadlineTime: '18:00',
   specialRequirements: '',
@@ -29,6 +30,7 @@ const initialForm = {
 
 export default function PostJob() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState(initialForm);
   const [loading, setLoading] = useState(false);
@@ -37,11 +39,20 @@ export default function PostJob() {
   const update = (field, value) =>
     setFormData(prev => ({ ...prev, [field]: value }));
 
+  const handlePaymentSelect = (val) => {
+    // Keep DB enum compatible ('MPESA' | 'AIRTEL') while supporting all local methods
+    const dbEnum = val === 'AIRTEL' ? 'AIRTEL' : 'MPESA';
+    setFormData(prev => ({
+      ...prev,
+      paymentMethod: dbEnum,
+      paymentMethodDisplay: val
+    }));
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     setError('');
     try {
-      // Combine separate date + time fields into ISO strings
       const jobDateISO = new Date(`${formData.jobDate}T${formData.startTime}:00`).toISOString();
       const deadlineISO = new Date(`${formData.deadlineDate}T${formData.deadlineTime}:00`).toISOString();
 
@@ -59,7 +70,7 @@ export default function PostJob() {
         applicationDeadline: deadlineISO,
         specialRequirements: formData.specialRequirements || null,
       });
-      setStep(5); // success
+      setStep(5);
     } catch (err) {
       const msg = err.response?.data?.error || err.response?.data?.details?.[0]?.message || 'Failed to post job. Please try again.';
       setError(msg);
@@ -69,10 +80,10 @@ export default function PostJob() {
   };
 
   const steps = [
-    { num: 1, label: 'Basics', icon: FileText },
-    { num: 2, label: 'Schedule', icon: Calendar },
-    { num: 3, label: 'Pay', icon: DollarSign },
-    { num: 4, label: 'Review', icon: CheckCircle },
+    { num: 1, label: t('pj_step1'), icon: FileText },
+    { num: 2, label: t('pj_step2'), icon: Calendar },
+    { num: 3, label: t('pj_step3'), icon: DollarSign },
+    { num: 4, label: t('pj_step4'), icon: CheckCircle },
   ];
 
   return (
@@ -82,9 +93,9 @@ export default function PostJob() {
         {/* Header */}
         <div style={{ marginBottom: '2rem' }}>
           <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>
-            Post a <span style={{ color: '#6366f1' }}>New Job</span>
+            {t('pj_headerTitle1')} <span style={{ color: '#6366f1' }}>{t('pj_headerTitle2')}</span>
           </h1>
-          <p style={{ color: '#64748b', marginTop: 6 }}>Fill in the details to find the right workers.</p>
+          <p style={{ color: '#64748b', marginTop: 6 }}>{t('pj_headerSub')}</p>
         </div>
 
         {/* Progress bar */}
@@ -120,94 +131,103 @@ export default function PostJob() {
 
         {/* ── Step 1: Basics ── */}
         {step === 1 && (
-          <Card title="Job Basics" icon={<FileText size={20} />}>
-            <Field label="Job Title *">
-              <input className="pj-input" placeholder="e.g. Warehouse Associate, Security Guard…"
+          <Card title={t('pj_step1')} icon={<FileText size={20} />}>
+            <Field label={t('pj_jobTitle')}>
+              <input className="pj-input" placeholder="e.g. Warehouse Associate, Fundi Ujenzi, Dereva…"
                 value={formData.title} onChange={e => update('title', e.target.value)} />
             </Field>
-            <Field label="Category *">
+            <Field label={t('pj_category')}>
               <select className="pj-input" value={formData.category} onChange={e => update('category', e.target.value)}>
-                <option value="">Select a category</option>
+                <option value="">{t('pj_selectCategory')}</option>
                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </Field>
-            <Field label="Description *">
+            <Field label={t('pj_description')}>
               <textarea className="pj-input pj-textarea" rows={4}
-                placeholder="Describe the role, duties, and expectations…"
+                placeholder="Eleza majukumu ya kazi na unachotarajia / Describe the role and duties…"
                 value={formData.description} onChange={e => update('description', e.target.value)} />
             </Field>
-            <Field label="Location Address *">
-              <input className="pj-input" placeholder="e.g. Posta, Dar es Salaam"
+            <Field label={t('pj_location')}>
+              <input className="pj-input" placeholder="e.g. Posta, Dar es Salaam / Sinza / Arusha"
                 value={formData.locationAddress} onChange={e => update('locationAddress', e.target.value)} />
             </Field>
-            <Field label="Number of Workers Needed *">
+            <Field label={t('pj_workersNeeded')}>
               <input className="pj-input" type="number" min={1}
                 value={formData.workersNeeded} onChange={e => update('workersNeeded', e.target.value)} />
             </Field>
-            <Field label="Special Requirements">
+            <Field label={t('pj_specialReq')}>
               <textarea className="pj-input pj-textarea" rows={2}
-                placeholder="e.g. Must have valid ID, own safety boots…"
+                placeholder="e.g. Kitambulisho cha NIDA, vifaa vya usalama…"
                 value={formData.specialRequirements} onChange={e => update('specialRequirements', e.target.value)} />
             </Field>
-            <Actions onNext={() => setStep(2)} />
+            <Actions onNext={() => setStep(2)} nextLabel={t('pj_btnNext')} />
           </Card>
         )}
 
         {/* ── Step 2: Schedule ── */}
         {step === 2 && (
-          <Card title="Schedule & Duration" icon={<Calendar size={20} />}>
-            <Field label="Job Date *">
+          <Card title={t('pj_step2')} icon={<Calendar size={20} />}>
+            <Field label={t('pj_jobDate')}>
               <input className="pj-input" type="date"
                 value={formData.jobDate} onChange={e => update('jobDate', e.target.value)} />
             </Field>
-            <Field label="Start Time *">
+            <Field label={t('pj_startTime')}>
               <input className="pj-input" type="time"
                 value={formData.startTime} onChange={e => update('startTime', e.target.value)} />
             </Field>
-            <Field label="Duration (hours) *">
+            <Field label={t('pj_duration')}>
               <input className="pj-input" type="number" min={0.5} step={0.5} placeholder="e.g. 8"
                 value={formData.durationHours} onChange={e => update('durationHours', e.target.value)} />
             </Field>
-            <Field label="Application Deadline Date *">
+            <Field label={t('pj_deadlineDate')}>
               <input className="pj-input" type="date"
                 value={formData.deadlineDate} onChange={e => update('deadlineDate', e.target.value)} />
             </Field>
-            <Field label="Application Deadline Time *">
+            <Field label={t('pj_deadlineTime')}>
               <input className="pj-input" type="time"
                 value={formData.deadlineTime} onChange={e => update('deadlineTime', e.target.value)} />
             </Field>
-            <Actions onBack={() => setStep(1)} onNext={() => setStep(3)} />
+            <Actions onBack={() => setStep(1)} onNext={() => setStep(3)} backLabel={t('pj_btnBack')} nextLabel={t('pj_btnNext')} />
           </Card>
         )}
 
-        {/* ── Step 3: Pay ── */}
+        {/* ── Step 3: Pay (0% Commission) ── */}
         {step === 3 && (
-          <Card title="Compensation" icon={<DollarSign size={20} />}>
-            <Field label="Pay Per Worker (TSh) *">
-              <input className="pj-input" type="number" min={1} placeholder="e.g. 1500"
+          <Card title={t('pj_step3')} icon={<DollarSign size={20} />}>
+            <Field label={t('pj_payPerWorker')}>
+              <input className="pj-input" type="number" min={1} placeholder="e.g. 25000"
                 value={formData.payPerWorker} onChange={e => update('payPerWorker', e.target.value)} />
             </Field>
             {formData.payPerWorker && (
-              <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 10, padding: '12px 16px', fontSize: 13, color: '#15803d', marginBottom: 12 }}>
-                💰 Total payout: <strong>TSh {(Number(formData.payPerWorker) * Number(formData.workersNeeded)).toLocaleString()}</strong> for {formData.workersNeeded} worker(s)
-                <br />Platform fee (15%): <strong>TSh {(Number(formData.payPerWorker) * 0.15 * Number(formData.workersNeeded)).toLocaleString()}</strong>
+              <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 10, padding: '14px 16px', fontSize: 13, color: '#15803d', marginBottom: 16 }}>
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
+                  💰 {t('pj_totalDirectPay')}: TSh {(Number(formData.payPerWorker) * Number(formData.workersNeeded)).toLocaleString()} ({formData.workersNeeded})
+                </div>
+                <div>{t('pj_zeroCommissionNote')}</div>
               </div>
             )}
-            <Field label="Payment Method *">
-              <select className="pj-input" value={formData.paymentMethod} onChange={e => update('paymentMethod', e.target.value)}>
-                <option value="MPESA">M-Pesa</option>
-                <option value="AIRTEL">Airtel Money</option>
+            <Field label={t('pj_paymentMethod')}>
+              <select
+                className="pj-input"
+                value={formData.paymentMethodDisplay}
+                onChange={e => handlePaymentSelect(e.target.value)}
+              >
+                <option value="M-Pesa">Vodacom M-Pesa (Direct)</option>
+                <option value="AIRTEL">Airtel Money (Direct)</option>
+                <option value="Mixx by Yas (Tigo Pesa)">Mixx by Yas / Tigo Pesa (Direct)</option>
+                <option value="HaloPesa">HaloPesa (Direct)</option>
+                <option value="Cash / Mkononi">Cash / Fedha Taslimu (Direct)</option>
               </select>
             </Field>
-            <Actions onBack={() => setStep(2)} onNext={() => setStep(4)} nextLabel="Review →" />
+            <Actions onBack={() => setStep(2)} onNext={() => setStep(4)} backLabel={t('pj_btnBack')} nextLabel={t('pj_btnNext')} />
           </Card>
         )}
 
         {/* ── Step 4: Review ── */}
         {step === 4 && (
-          <Card title="Review & Post" icon={<CheckCircle size={20} />}>
+          <Card title={t('pj_reviewPost')} icon={<CheckCircle size={20} />}>
             <ReviewGrid data={formData} />
-            <Actions onBack={() => setStep(3)} onNext={handleSubmit} nextLabel={loading ? 'Posting…' : '🚀 Post Job'} disabled={loading} />
+            <Actions onBack={() => setStep(3)} onNext={handleSubmit} backLabel={t('pj_btnBack')} nextLabel={loading ? t('pj_posting') : t('pj_btnPost')} disabled={loading} />
           </Card>
         )}
 
@@ -215,16 +235,16 @@ export default function PostJob() {
         {step === 5 && (
           <div style={{ textAlign: 'center', background: '#fff', borderRadius: 16, padding: '3rem 2rem', boxShadow: '0 4px 24px rgba(0,0,0,.08)' }}>
             <div style={{ fontSize: 64, marginBottom: 12 }}>🎉</div>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#1e293b' }}>Job Posted Successfully!</h2>
+            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#1e293b' }}>{t('pj_successTitle')}</h2>
             <p style={{ color: '#64748b', margin: '8px 0 28px' }}>
-              Workers in your area will start seeing and applying to your job right away.
+              {t('pj_successDesc')}
             </p>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               <button className="pj-btn-primary" onClick={() => navigate('/employer/dashboard')}>
-                View Dashboard
+                {t('pj_viewDashboard')}
               </button>
               <button className="pj-btn-secondary" onClick={() => { setStep(1); setFormData(initialForm); }}>
-                Post Another Job
+                {t('pj_postAnother')}
               </button>
             </div>
           </div>
@@ -261,8 +281,6 @@ export default function PostJob() {
   );
 }
 
-/* ── Sub-components ── */
-
 function Card({ title, icon, children }) {
   return (
     <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', boxShadow: '0 2px 16px rgba(0,0,0,.07)', marginBottom: 16 }}>
@@ -283,11 +301,11 @@ function Field({ label, children }) {
   );
 }
 
-function Actions({ onBack, onNext, nextLabel = 'Next →', disabled = false }) {
+function Actions({ onBack, onNext, backLabel = '← Back', nextLabel = 'Next →', disabled = false }) {
   return (
     <div style={{ display: 'flex', justifyContent: onBack ? 'space-between' : 'flex-end', marginTop: 24 }}>
       {onBack && (
-        <button className="pj-btn-secondary" onClick={onBack}>← Back</button>
+        <button className="pj-btn-secondary" onClick={onBack}>{backLabel}</button>
       )}
       <button className="pj-btn-primary" onClick={onNext} disabled={disabled}>{nextLabel}</button>
     </div>
@@ -303,8 +321,9 @@ function ReviewGrid({ data }) {
     ['Job Date', data.jobDate],
     ['Start Time', data.startTime],
     ['Duration', `${data.durationHours} hours`],
-    ['Pay Per Worker', `TSh ${Number(data.payPerWorker).toLocaleString()}`],
-    ['Payment Method', data.paymentMethod],
+    ['Pay Per Worker (100% Direct)', `TSh ${Number(data.payPerWorker).toLocaleString()}`],
+    ['Platform Fee', 'TSh 0 (0% Free Launch)'],
+    ['Payment Method', data.paymentMethodDisplay || data.paymentMethod],
     ['Application Deadline', data.deadlineDate && data.deadlineTime ? `${data.deadlineDate} at ${data.deadlineTime}` : '—'],
     ['Description', data.description],
     ['Special Requirements', data.specialRequirements || '—'],
@@ -313,7 +332,7 @@ function ReviewGrid({ data }) {
     <div style={{ display: 'grid', gap: 8, marginBottom: 8 }}>
       {rows.map(([label, value]) => (
         <div key={label} style={{ display: 'flex', gap: 12, padding: '8px 0', borderBottom: '1px solid #f1f5f9', fontSize: 14 }}>
-          <span style={{ minWidth: 160, color: '#64748b', fontWeight: 600 }}>{label}</span>
+          <span style={{ minWidth: 180, color: '#64748b', fontWeight: 600 }}>{label}</span>
           <span style={{ color: '#1e293b', wordBreak: 'break-word' }}>{value || '—'}</span>
         </div>
       ))}

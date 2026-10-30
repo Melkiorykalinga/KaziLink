@@ -1,0 +1,157 @@
+{
+  "users": [
+    {
+      "id": "adm-default-001",
+      "email": "admin@kazilink.com",
+      "phone": "0700000000",
+      "passwordHash": "$2b$10$XaGxPsCJFwYVJzbJMvJyI.gI6j1eIC9U76Df7miEzdOJpGmLXmZGu",
+      "fullName": "System Admin",
+      "role": "ADMIN",
+      "locationCity": "Dar es Salaam",
+      "isVerified": true,
+      "isActive": true,
+      "lastActiveAt": "2026-10-30T08:12:20.912Z",
+      "refreshToken": null,
+      "createdAt": "2026-10-30T08:12:20.912Z",
+      "updatedAt": "2026-10-30T08:12:20.912Z"
+    },
+    {
+      "id": "emp-default-001",
+      "email": "employer@kazilink.com",
+      "phone": "0755123456",
+      "passwordHash": "$2b$10$W.IFXF91QCDQFaymnr7IJOzHri6QY4bQYQrPknqUoojZWDeGa/K8.",
+      "fullName": "Melki Logistics & Builders",
+      "role": "EMPLOYER",
+      "locationCity": "Dar es Salaam",
+      "isVerified": true,
+      "isActive": true,
+      "lastActiveAt": "2026-10-30T08:13:59.204Z",
+      "refreshToken": null,
+      "createdAt": "2026-10-30T08:12:20.912Z",
+      "updatedAt": "2026-10-30T08:18:56.566Z"
+    },
+    {
+      "id": "wrk-default-001",
+      "email": "worker@kazilink.com",
+      "phone": "0788654321",
+      "passwordHash": "$2b$10$zW19RXkzmohKqBoMY2ChbedBr9j3IgljsU2A8cDC5Ki39hX4dRqTy",
+      "fullName": "Juma Fundi",
+      "role": "WORKER",
+      "locationCity": "Dar es Salaam",
+      "isVerified": true,
+      "isActive": true,
+      "lastActiveAt": "2026-10-30T08:20:15.027Z",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Indyay1kZWZhdWx0LTAwMSIsImlhdCI6MTc5MzM0ODQxNSwiZXhwIjoxNzkzMzU1NjE1fQ.77Pdc2bE-DWTGRLP95QN5MXh1AXqJJHpYvh3L-tbSx0",
+      "createdAt": "2026-10-30T08:12:20.912Z",
+      "updatedAt": "2026-10-30T08:20:15.030Z"
+    }
+  ],
+  "employerProfiles": [
+    {
+      "id": "ep-default-001",
+      "userId": "emp-default-001",
+      "businessName": "Melki Logistics & Builders",
+      "businessDescription": "Construction, moving, and warehouse services in Tanzania.",
+      "industry": "Construction & Logistics",
+      "logoUrl": null,
+      "totalJobsPosted": 2,
+      "createdAt": "2026-10-30T08:12:20.912Z",
+      "updatedAt": "2026-10-30T08:12:20.912Z"
+    }
+  ],
+  "workerProfiles": [
+    {
+      "id": "wp-default-001",
+      "userId": "wrk-default-001",
+      "bio": "Mchapakazi hodari wa ujenzi, kupakia mizigo, na usafi.",
+      "skills": [
+        "Ujenzi",
+        "Kupakia Mizigo",
+        "Usafi"
+      ],
+      "availabilityDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat"
+      ],
+      "availabilityTimes": "07:00 - 18:00",
+      "preferredRadiusKm": 15,
+      "averageRating": 4.9,
+      "totalJobsCompleted": 12,
+      "totalEarned": 340000,
+      "availabilityStatus": "AVAILABLE_NOW",
+      "createdAt": "2026-10-30T08:12:20.912Z",
+      "updatedAt": "2026-10-30T08:12:20.912Z"
+    }
+  ],
+  "workerSkills": [
+    {
+      "id": "sk-001",
+      "workerProfileId": "wp-default-001",
+      "name": "Kupakia na Kupanga Mizigo (Warehousing)",
+      "isVerified": true,
+      "createdAt": "2026-10-30T08:12:20.912Z"
+    },
+    {
+      "id": "sk-002",
+      "workerProfileId": "wp-default-001",
+      "name": "Ujenzi & Ukarabati (Construction)",
+      "isVerified": true,
+      "createdAt": "2026-10-30T08:12:20.912Z"
+    }
+  ],
+  "jobs": [
+    {
+      "id": "job-sample-001",
+      "employerId": "emp-default-001",
+      "title": "Kupakia na Kupanga Mizigo Godown (Warehouse Assistant)",
+      "description": "Tunahitaji vijana wachapakazi wa kupanga maboksi kwenye godown letu Mikocheni kwa siku moja. Chakula cha mchana kinatolewa na malipo ni papo hapo kazi ikiisha.",
+      "category": "Warehousing",
+      "workersNeeded": 3,
+      "workersAccepted": 0,
+      "jobDate": "2026-10-30T08:12:20.912Z",
+      "startTime": "08:00",
+      "durationHours": 8,
+      "locationAddress": "Mikocheni B, Dar es Salaam",
+      "locationLat": -6.764,
+      "locationLng": 39.248,
+      "payPerWorker": 30000,
+      "totalPayWithFee": 30000,
+      "paymentMethod": "MPESA",
+      "applicationDeadline": "2026-11-06T08:12:21.246Z",
+      "specialRequirements": "Uwe na kitambulisho (NIDA au Kura) na viatu imara.",
+      "status": "ACTIVE",
+      "createdAt": "2026-10-30T08:12:20.912Z",
+      "updatedAt": "2026-10-30T08:12:20.912Z"
+    },
+    {
+      "id": "job-sample-002",
+      "employerId": "emp-default-001",
+      "title": "Usafi wa Ofisi Mpya (Office Deep Cleaning)",
+      "description": "Kufanya usafi wa vioo, sakafu na kupanga samani kwenye ofisi mpya iliyopo Posta Mpya.",
+      "category": "Cleaning",
+      "workersNeeded": 2,
+      "workersAccepted": 0,
+      "jobDate": "2026-10-30T08:12:20.912Z",
+      "startTime": "09:00",
+      "durationHours": 6,
+      "locationAddress": "Posta Mpya, Dar es Salaam",
+      "locationLat": -6.816,
+      "locationLng": 39.289,
+      "payPerWorker": 25000,
+      "totalPayWithFee": 25000,
+      "paymentMethod": "MPESA",
+      "applicationDeadline": "2026-11-06T08:12:21.246Z",
+      "specialRequirements": "Uzoefu wa usafi wa maofisi.",
+      "status": "ACTIVE",
+      "createdAt": "2026-10-30T08:12:20.912Z",
+      "updatedAt": "2026-10-30T08:12:20.912Z"
+    }
+  ],
+  "applications": [],
+  "transactions": [],
+  "ratings": []
+}

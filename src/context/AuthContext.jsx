@@ -15,12 +15,13 @@ export const AuthProvider = ({ children }) => {
     setShowExpiryModal(true);
   };
 
-  // 401 Interceptor
+  // 401 Interceptor (ignore /auth/login so wrong credentials show normal error)
   useEffect(() => {
     const resInterceptor = api.interceptors.response.use(
       res => res,
       err => {
-        if (err.response && err.response.status === 401) {
+        const reqUrl = err.config?.url || '';
+        if (err.response && err.response.status === 401 && !reqUrl.includes('/auth/login')) {
           triggerSessionExpiry();
         }
         return Promise.reject(err);

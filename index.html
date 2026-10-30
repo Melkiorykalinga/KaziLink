@@ -1,13 +1,36 @@
 <!doctype html>
-<html lang="en">
+<html lang="sw">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KaziLink</title>
+    <meta name="theme-color" content="#0c4a6e" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="KaziLink" />
+    <title>KaziLink — Jukwaa la Kazi na Mafundi | Instant Gig &amp; Job Marketplace</title>
+    <meta
+      name="description"
+      content="KaziLink connects employers with verified nearby workers instantly. 100% Free to use, 0% Commission, Direct Mobile Money & Cash payments."
+    />
+    <meta property="og:title" content="KaziLink — Pata Mfanyakazi au Kazi Papo Hapo (100% Bure)" />
+    <meta
+      property="og:description"
+      content="Unganishwa na waajiri au mafundi wa karibu kwa sekunde chache. Hakuna makato ya kati (0% Commission)."
+    />
+    <meta property="og:type" content="website" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>

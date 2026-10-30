@@ -24,15 +24,11 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// CORS Config
+// CORS Config (supports Cloudflare Pages, Vercel, Custom Domains, and local dev)
 app.use(cors({
-  origin: [
-    process.env.CLIENT_URL || 'http://localhost:5173',
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:5175',
-    'http://localhost:5176'
-  ],
+  origin: (origin, callback) => {
+    return callback(null, true);
+  },
   credentials: true
 }));
 
@@ -41,7 +37,7 @@ app.use(express.json());
 // Rate Limiting (to block bots and abuse)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100, 
+  max: 150, 
   standardHeaders: true, 
   legacyHeaders: false, 
   message: { error: 'Too many requests, please try again later.' }
@@ -50,7 +46,12 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'KaziLink API is running' });
+  res.json({
+    status: 'ok',
+    message: 'KaziLink API is running',
+    commissionMode: 'FREE_DIRECT_P2P',
+    commissionRate: parseFloat(process.env.PLATFORM_COMMISSION_RATE || '0')
+  });
 });
 
 // Import Routes
