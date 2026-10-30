@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('../utils/prismaClient');
+const { PrismaClient, loadDB, runAutoCleanup, getStorageMetrics } = require('../utils/prismaClient');
 const authenticate = require('../middleware/authenticate');
 const requireRole = require('../middleware/requireRole');
 
@@ -27,11 +27,28 @@ router.get('/stats', async (req, res) => {
       totalJobs,
       completedJobs,
       openDisputes,
-      totalRevenue: transactions._sum.commission || 0
+      totalRevenue: transactions._sum.commission || 0,
+      storage: getStorageMetrics()
     });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch admin stats' });
+  }
+});
+
+// POST /api/admin/cleanup -> Manually trigger Smart Auto-Cleanup (7d expired jobs / 30d completed jobs & disputes)
+router.post('/cleanup', async (req, res) => {
+  try {
+    const db = loadDB();
+    const result = runAutoCleanup(db, true);
+    res.json({
+      message: 'Smart Auto-Cleanup completed successfully.',
+      cleanupResult: result,
+      storage: getStorageMetrics()
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to run database cleanup' });
   }
 });
 

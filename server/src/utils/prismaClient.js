@@ -7,6 +7,11 @@ const bcrypt = require('bcrypt');
 const LOCAL_DB_FILE = path.join(__dirname, '../../local-db.json');
 const TMP_DB_FILE = path.join(os.tmpdir(), 'kazilink-local-db.json');
 let inMemoryDB = null;
+let lastCleanupTime = 0;
+
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+const CLEANUP_INTERVAL_MS = 10 * 60 * 1000; // Run auto-check every 10 minutes
 
 function uuid() {
   return crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
@@ -48,26 +53,169 @@ function getInitialSeed() {
   };
 }
 
+function runAutoCleanup(db, forceNow = false) {
+  const now = Date.now();
+  if (!forceNow && now - lastCleanupTime < CLEANUP_INTERVAL_MS) {
+    return null;
+  }
+  lastCleanupTime = now;
+
+  if (!db) return null;
+  if (!db.disputes) db.disputes = [];
+  if (!db.jobs) db.jobs = [];
+  if (!db.applications) db.applications = [];
+  if (!db.transactions) db.transactions = [];
+  if (!db.ratings) db.ratings = [];
+
+  let expiredJobsRemoved = 0;
+  let completedJobsArchived = 0;
+  let oldApplicationsRemoved = 0;
+  let oldTransactionsRemoved = 0;
+  let resolvedDisputesRemoved = 0;
+  let changed = false;
+
+  // Find jobs with open/in-review disputes so we never delete an active dispute's job
+  const activeDisputeJobIds = new Set(
+    db.disputes
+      .filter(d => d.status !== 'RESOLVED')
+      .map(d => d.jobId)
+  );
+
+  // Find jobs with active in-progress transactions
+  const activeTxJobIds = new Set(
+    db.transactions
+      .filter(t => t.status !== 'RELEASED' && t.status !== 'REFUNDED')
+      .map(t => t.jobId)
+  );
+
+  const jobsToRemove = new Set();
+
+  for (const job of db.jobs) {
+    if (activeDisputeJobIds.has(job.id)) continue;
+
+    // 1. Expired uncompleted jobs older than 7 days
+    if (
+      (job.status === 'ACTIVE' || job.status === 'DRAFT' || job.status === 'CANCELLED') &&
+      !activeTxJobIds.has(job.id) &&
+      (job.workersAccepted || 0) === 0
+    ) {
+      const refDateStr = job.applicationDeadline || job.jobDate || job.createdAt;
+      const refTime = refDateStr ? new Date(refDateStr).getTime() : now;
+      if (!isNaN(refTime) && now - refTime > SEVEN_DAYS_MS) {
+        jobsToRemove.add(job.id);
+        expiredJobsRemoved++;
+        changed = true;
+        continue;
+      }
+    }
+
+    // 2. Completed jobs older than 30 days (WorkerProfile stats are preserved on workerProfiles)
+    if (job.status === 'COMPLETED' && !activeTxJobIds.has(job.id)) {
+      const completedDateStr = job.updatedAt || job.createdAt;
+      const completedTime = completedDateStr ? new Date(completedDateStr).getTime() : now;
+      if (!isNaN(completedTime) && now - completedTime > THIRTY_DAYS_MS) {
+        jobsToRemove.add(job.id);
+        completedJobsArchived++;
+        changed = true;
+      }
+    }
+  }
+
+  if (jobsToRemove.size > 0) {
+    db.jobs = db.jobs.filter(j => !jobsToRemove.has(j.id));
+
+    const prevApps = db.applications.length;
+    db.applications = db.applications.filter(a => !jobsToRemove.has(a.jobId));
+    oldApplicationsRemoved += prevApps - db.applications.length;
+
+    const prevTxs = db.transactions.length;
+    db.transactions = db.transactions.filter(t => !jobsToRemove.has(t.jobId));
+    oldTransactionsRemoved += prevTxs - db.transactions.length;
+
+    db.ratings = db.ratings.filter(r => !jobsToRemove.has(r.jobId));
+  }
+
+  // Also clean up any standalone RELEASED transactions older than 30 days
+  const prevStandaloneTxs = db.transactions.length;
+  db.transactions = db.transactions.filter(t => {
+    if (t.status !== 'RELEASED') return true;
+    if (activeDisputeJobIds.has(t.jobId)) return true;
+    const txTime = new Date(t.updatedAt || t.createdAt).getTime();
+    return isNaN(txTime) || now - txTime <= THIRTY_DAYS_MS;
+  });
+  if (db.transactions.length !== prevStandaloneTxs) {
+    oldTransactionsRemoved += prevStandaloneTxs - db.transactions.length;
+    changed = true;
+  }
+
+  // 3. Clean up RESOLVED disputes older than 30 days
+  const prevDisputes = db.disputes.length;
+  db.disputes = db.disputes.filter(d => {
+    if (d.status !== 'RESOLVED') return true;
+    const dTime = new Date(d.updatedAt || d.createdAt).getTime();
+    return isNaN(dTime) || now - dTime <= THIRTY_DAYS_MS;
+  });
+  if (db.disputes.length !== prevDisputes) {
+    resolvedDisputesRemoved += prevDisputes - db.disputes.length;
+    changed = true;
+  }
+
+  if (changed) {
+    saveDB(db);
+  }
+
+  return {
+    expiredJobsRemoved,
+    completedJobsArchived,
+    oldApplicationsRemoved,
+    oldTransactionsRemoved,
+    resolvedDisputesRemoved,
+    cleanedAt: new Date(now).toISOString()
+  };
+}
+
 function loadDB() {
   try {
+    let parsed = null;
     if (fs.existsSync(TMP_DB_FILE)) {
-      const parsed = JSON.parse(fs.readFileSync(TMP_DB_FILE, 'utf8'));
-      if (!parsed.disputes) parsed.disputes = [];
-      return parsed;
+      parsed = JSON.parse(fs.readFileSync(TMP_DB_FILE, 'utf8'));
+    } else if (fs.existsSync(LOCAL_DB_FILE)) {
+      parsed = JSON.parse(fs.readFileSync(LOCAL_DB_FILE, 'utf8'));
+    } else if (inMemoryDB) {
+      parsed = inMemoryDB;
+    } else {
+      parsed = getInitialSeed();
+      saveDB(parsed);
     }
-    if (fs.existsSync(LOCAL_DB_FILE)) {
-      const parsed = JSON.parse(fs.readFileSync(LOCAL_DB_FILE, 'utf8'));
-      if (!parsed.disputes) parsed.disputes = [];
-      return parsed;
-    }
-    if (inMemoryDB) return inMemoryDB;
-    const seed = getInitialSeed();
-    saveDB(seed);
-    return seed;
+    if (!parsed.disputes) parsed.disputes = [];
+    runAutoCleanup(parsed, false);
+    return parsed;
   } catch (e) {
     if (!inMemoryDB) inMemoryDB = getInitialSeed();
     return inMemoryDB;
   }
+}
+
+function getStorageMetrics() {
+  const db = loadDB();
+  const serialized = JSON.stringify(db);
+  const sizeBytes = Buffer.byteLength(serialized, 'utf8');
+  return {
+    sizeBytes,
+    sizeKB: Number((sizeBytes / 1024).toFixed(2)),
+    counts: {
+      users: (db.users || []).length,
+      jobs: (db.jobs || []).length,
+      applications: (db.applications || []).length,
+      transactions: (db.transactions || []).length,
+      disputes: (db.disputes || []).length
+    },
+    retentionPolicy: {
+      expiredUncompletedJobsDays: 7,
+      completedJobsAndTransactionsDays: 30,
+      resolvedDisputesDays: 30
+    }
+  };
 }
 
 function saveDB(data) {
@@ -503,12 +651,14 @@ class LocalPrismaClient {
       },
       create: async ({ data }) => {
         const db = loadDB();
+        const now = new Date().toISOString();
         const item = {
           id: uuid(),
           status: 'OPEN',
           adminNotes: null,
           ...data,
-          createdAt: new Date().toISOString()
+          createdAt: now,
+          updatedAt: now
         };
         db.disputes.push(item);
         saveDB(db);
@@ -518,7 +668,7 @@ class LocalPrismaClient {
         const db = loadDB();
         const idx = db.disputes.findIndex(d => matchesWhere(d, where));
         if (idx === -1) throw new Error('Dispute not found');
-        db.disputes[idx] = { ...db.disputes[idx], ...data };
+        db.disputes[idx] = { ...db.disputes[idx], ...data, updatedAt: new Date().toISOString() };
         saveDB(db);
         return attachDisputeRelations(db, db.disputes[idx]);
       }
@@ -532,4 +682,4 @@ class LocalPrismaClient {
   async $disconnect() {}
 }
 
-module.exports = { PrismaClient: LocalPrismaClient, getInitialSeed, saveDB };
+module.exports = { PrismaClient: LocalPrismaClient, getInitialSeed, saveDB, loadDB, runAutoCleanup, getStorageMetrics };

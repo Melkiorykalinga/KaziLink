@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { Users, Briefcase, DollarSign, Activity, AlertCircle, Shield, XCircle, Phone, MessageSquareWarning, CheckCircle } from 'lucide-react';
+import { Users, Briefcase, DollarSign, Activity, AlertCircle, Shield, XCircle, Phone, MessageSquareWarning, CheckCircle, Database, Trash2 } from 'lucide-react';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
@@ -9,6 +9,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'disputes'
   const [actionLoading, setActionLoading] = useState(null);
+  const [cleanupLoading, setCleanupLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [notesInput, setNotesInput] = useState({});
 
@@ -66,6 +67,32 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleManualCleanup = async () => {
+    setCleanupLoading(true);
+    setMessage('');
+    try {
+      const res = await api.post('/admin/cleanup');
+      const r = res.data.cleanupResult || {};
+      const totalCleaned =
+        (r.expiredJobsRemoved || 0) +
+        (r.completedJobsArchived || 0) +
+        (r.oldApplicationsRemoved || 0) +
+        (r.oldTransactionsRemoved || 0) +
+        (r.resolvedDisputesRemoved || 0);
+      await fetchAdminData();
+      setMessage(
+        totalCleaned > 0
+          ? `✓ Smart Auto-Cleanup imekamilika! Rekodi ${totalCleaned} za zamani zimefutwa ili kutunza nafasi.`
+          : '✓ Database ni safi! Hakuna kazi zilizopitwa na wakati (siku 7+) au kazi zilizokamilika za zamani (siku 30+) za kufuta kwa sasa.'
+      );
+    } catch (err) {
+      console.error(err);
+      setMessage('Failed to run cleanup');
+    } finally {
+      setCleanupLoading(false);
+    }
+  };
+
   const openCount = disputes.filter(d => d.status !== 'RESOLVED').length;
 
   return (
@@ -116,6 +143,37 @@ const AdminDashboard = () => {
               <StatCard title="Kazi Zilizopostiwa" value={stats?.totalJobs || 0} icon={<Briefcase className="text-primary-500" />} />
               <StatCard title="Kazi Zilizokamilika" value={stats?.completedJobs || 0} icon={<CheckCircle className="text-green-500" />} />
               <StatCard title="Malalamiko Wazi" value={openCount} icon={<MessageSquareWarning className="text-red-500" />} />
+            </div>
+
+            {/* Smart Auto-Cleanup & Storage Status Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-emerald-100 p-6 mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl mt-0.5">
+                  <Database size={24} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-base font-bold text-gray-900">
+                      Smart Auto-Cleanup Active (Utunzaji wa Space ya Database)
+                    </h3>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                      Ukubwa: {stats?.storage?.sizeKB ?? 0.6} KB
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                    • <strong>Siku 7:</strong> Kazi zilizopitwa na muda bila kufanyika hufutwa zenyewe.<br />
+                    • <strong>Siku 30:</strong> Kazi zilizokamilika na malalamiko yaliyotatuliwa hufutwa baada ya siku 30 (huku <em>nyota/ratings</em> na idadi ya kazi za mfanyakazi zikibaki salama kwenye wasifu wake).
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleManualCleanup}
+                disabled={cleanupLoading}
+                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center shrink-0 transition-colors cursor-pointer"
+              >
+                <Trash2 size={15} className="mr-1.5" />
+                {cleanupLoading ? 'Inasafisha...' : 'Safisha Sasa (Clean Up)'}
+              </button>
             </div>
 
             {/* Users Table */}
